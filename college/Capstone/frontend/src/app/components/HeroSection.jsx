@@ -4,12 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import SplitText from "./SplitText";
 import Galaxy from "./Galaxy";
-import MulaiAnalisisButton from "./MulaiAnalisisButton"; // ✅ Import tombol pintar ini
+import MulaiAnalisisButton from "./MulaiAnalisisButton";
+import { useRouter } from "next/navigation";
 
 export default function HeroSection({ id }) {
   const [isClient, setIsClient] = useState(false);
   const [isGalaxyActive, setIsGalaxyActive] = useState(true);
   const scrollTimeout = useRef(null);
+  const router = useRouter();
 
   useEffect(() => {
     setIsClient(true);
@@ -74,11 +76,8 @@ export default function HeroSection({ id }) {
             <MulaiAnalisisButton />
 
             <button
-              onClick={() => {
-                const el = document.getElementById("handwriting");
-                if (el) el.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="border-2 border-white/30 text-white font-semibold text-lg px-8 py-3 rounded-xl hover:bg-white/10 hover:border-white/50 backdrop-blur-md transition-all duration-300"
+              onClick={() => router.push("/learn-more")}
+              className="relative z-50 border-2 border-white/30 text-white font-semibold text-lg px-8 py-3 rounded-xl hover:bg-white/10 hover:border-white/50 backdrop-blur-md transition-all duration-300"
             >
               Pelajari Lebih Lanjut
             </button>

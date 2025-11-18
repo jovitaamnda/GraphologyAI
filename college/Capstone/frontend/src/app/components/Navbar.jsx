@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../../firebase/firebaseConfig"; // sesuaikan path jika perlu
 
@@ -10,7 +10,9 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false); // mobile menu
   const [profileOpen, setProfileOpen] = useState(false); // profile dropdown
   const [user, setUser] = useState(undefined);
+  const [imgSrc, setImgSrc] = useState("/profile.jpeg"); // fallback default
   const router = useRouter();
+  const pathname = usePathname();
 
   const profileRef = useRef(null);
 
@@ -29,6 +31,15 @@ export default function Navbar() {
     });
     return () => unsub();
   }, []);
+
+  // update imgSrc when user changes
+  useEffect(() => {
+    if (user && user.photoURL) {
+      setImgSrc(user.photoURL);
+    } else {
+      setImgSrc("/profile.jpeg");
+    }
+  }, [user]);
 
   // close profile dropdown on outside click / Escape
   useEffect(() => {
@@ -57,30 +68,45 @@ export default function Navbar() {
     }
   };
 
-  const handleScroll = (id) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+  // smart scroll: if on homepage -> scroll, else navigate to homepage with query to auto-scroll
+  const handleScrollOrNavigate = (id) => {
+    if (pathname === "/") {
+      const el = document.getElementById(id);
+      if (el) {
+        // small timeout to ensure layout/sticky navbar settled
+        setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 60);
+      }
+    } else {
+      // navigate to home with query param; home page should read this and auto-scroll
+      router.push(`/?scroll=${encodeURIComponent(id)}`);
+    }
+    // close mobile menu if open
+    setMobileOpen(false);
   };
 
-  const avatarSrc = user?.photoURL || "/profile-icon.png";
+  const handleImgError = () => {
+    if (imgSrc !== "/profile.jpeg") setImgSrc("/profile.jpeg");
+  };
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-white text-white transition-colors duration-300">
+    <nav className="fixed top-0 left-0 w-full z-50 bg-white text-white shadow-sm transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
-        <div onClick={() => handleScroll("home")} className="text-2xl font-bold text-[#1e3a8a] cursor-pointer select-none">
+        <div onClick={() => handleScrollOrNavigate("home")} className="text-2xl font-bold text-[#1e3a8a] cursor-pointer select-none">
           Grapholyze
         </div>
 
         {/* Desktop menu */}
         <div className="hidden md:flex items-center space-x-8">
-          <button onClick={() => handleScroll("home")} className="text-gray-700 hover:text-blue-600 transition-colors">
+          <button onClick={() => handleScrollOrNavigate("home")} className="text-gray-700 hover:text-blue-600 transition-colors">
             Home
           </button>
-          <button onClick={() => handleScroll("handwriting")} className="text-gray-700 hover:text-blue-600 transition-colors">
+
+          <button onClick={() => handleScrollOrNavigate("handwriting")} className="text-gray-700 hover:text-blue-600 transition-colors">
             Handwriting Analyst
           </button>
-          <button onClick={() => handleScroll("about")} className="text-gray-700 hover:text-blue-600 transition-colors">
+
+          <button onClick={() => handleScrollOrNavigate("about")} className="text-gray-700 hover:text-blue-600 transition-colors">
             About
           </button>
 
@@ -99,7 +125,7 @@ export default function Navbar() {
                 className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 hover:border-blue-500 focus:outline-none"
                 title={user.displayName || "Profile"}
               >
-                <Image src="/profile.jpeg" alt="avatar" width={40} height={40} className="object-cover rounded-full" />
+                <Image src={imgSrc} alt="avatar" width={40} height={40} className="object-cover rounded-full" onError={handleImgError} />
               </button>
 
               {/* Dropdown: anchored to parent (top-full) */}
@@ -156,31 +182,13 @@ export default function Navbar() {
       {/* Mobile Menu (separate from profile dropdown) */}
       {mobileOpen && (
         <div className="md:hidden bg-white shadow-lg border-t border-gray-200 px-6 py-4 space-y-4">
-          <button
-            onClick={() => {
-              setMobileOpen(false);
-              handleScroll("home");
-            }}
-            className="block w-full text-left text-gray-700 hover:text-blue-600"
-          >
+          <button onClick={() => handleScrollOrNavigate("home")} className="block w-full text-left text-gray-700 hover:text-blue-600">
             Home
           </button>
-          <button
-            onClick={() => {
-              setMobileOpen(false);
-              handleScroll("handwriting");
-            }}
-            className="block w-full text-left text-gray-700 hover:text-blue-600"
-          >
+          <button onClick={() => handleScrollOrNavigate("handwriting")} className="block w-full text-left text-gray-700 hover:text-blue-600">
             Handwriting Analyst
           </button>
-          <button
-            onClick={() => {
-              setMobileOpen(false);
-              handleScroll("about");
-            }}
-            className="block w-full text-left text-gray-700 hover:text-blue-600"
-          >
+          <button onClick={() => handleScrollOrNavigate("about")} className="block w-full text-left text-gray-700 hover:text-blue-600">
             About
           </button>
 
