@@ -1,5 +1,5 @@
 import "./globals.css";
-import Navbar from "./components/Navbar";
+import NavbarWrapper from "./components/NavbarWrapper";
 
 export const metadata = {
   title: "Grapholyze",
@@ -10,8 +10,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Navbar />
-        <main className="pt-0">{children}</main>
+        <NavbarWrapper />
+        <main>{children}</main>
       </body>
     </html>
   );
