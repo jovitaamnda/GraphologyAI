@@ -1,114 +1,201 @@
-// src/pages/learn-more.jsx
-import React from "react";
+"use client";
+
+import { motion } from "framer-motion";
+import { Sparkles, Upload, PenTool, Brain, Zap, Shield, ArrowRight, CheckCircle, Star, Users, Clock, Globe } from "lucide-react";
 import Link from "next/link";
 
 export default function LearnMore() {
+  const features = [
+    { icon: Zap, title: "Analisis Instan", desc: "Hasil kepribadian dalam hitungan detik" },
+    { icon: Upload, title: "Upload Foto", desc: "Unggah tulisan tangan dari galeri" },
+    { icon: PenTool, title: "Tulis Langsung", desc: "Gunakan canvas digital interaktif" },
+    { icon: Brain, title: "AI Graphology", desc: "Didukung teknologi AI terdepan" },
+    { icon: Shield, title: "100% Aman", desc: "Data pribadi terenkripsi & terlindungi" },
+    { icon: Globe, title: "Akses Dimana Saja", desc: "Bisa diakses dari HP, tablet, atau laptop" },
+  ];
+
+  const steps = [
+    { num: "01", title: "Daftar / Login", desc: "Buat akun dalam 30 detik" },
+    { num: "02", title: "Pilih Metode", desc: "Upload foto atau tulis langsung" },
+    { num: "03", title: "Tunggu Sebentar", desc: "AI menganalisis tulisan Anda" },
+    { num: "04", title: "Lihat Hasil", desc: "Dapatkan laporan kepribadian lengkap!" },
+  ];
+
   return (
-    <div className="flex flex-col min-h-screen font-sans bg-white text-gray-800">
-      {/* Header Section */}
-      <section className="bg-indigo-900 text-white py-16 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-3 mt-10">Pelajari Lebih Lanjut</h2>
-        <p className="text-lg md:text-xl">Kenali tulisan tangan Anda dengan kecerdasan buatan.</p>
-      </section>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-100">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white py-24">
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-96 h-96 bg-purple-600 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-pink-600 rounded-full blur-3xl opacity-30 animate-pulse delay-1000"></div>
+        </div>
 
-      {/* Description Box */}
-      <section className="flex justify-center py-10 px-6">
-        <div className="bg-white shadow-md rounded-xl p-6 max-w-3xl text-center">
-          <p className="text-gray-700 text-lg">
-            <strong>Graphology AI</strong> adalah aplikasi analisis tulisan tangan berbasis web yang membantu Anda memahami karakter, emosi, dan pola kepribadian hanya dari goresan pena.
-          </p>
+        <div className="relative z-10 max-w-7xl mx-auto px-6 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <h1 className="text-5xl md:text-7xl font-black mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-pink-300">
+              Grapholyze AI
+            </h1>
+            <p className="text-2xl md:text-4xl font-bold mb-6">Ungkap Rahasia Kepribadian dari Tulisan Tangan</p>
+            <p className="text-lg md:text-xl text-purple-200 max-w-3xl mx-auto">
+              Teknologi AI terdepan yang menganalisis goresan pena Anda untuk mengungkap karakter, emosi, dan potensi tersembunyi.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+            className="mt-12 inline-block"
+          >
+            <div className="w-32 h-32 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl flex items-center justify-center shadow-2xl mx-auto">
+              <Sparkles className="w-20 h-20 text-white" />
+            </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Cara Menggunakan Aplikasi */}
-      <section className="px-8 md:px-20">
-        <div className="text-center mb-6">
-          <button className="bg-indigo-600 text-white font-semibold px-6 py-2 rounded-xl shadow hover:bg-[#4338ca] transition">CARA MENGGUNAKAN APLIKASI</button>
-        </div>
+      {/* Features Grid */}
+      <section className="py-20 px-6">
+        <div className="max-w-7xl mx-auto">
+          <motion.h2
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            className="text-4xl md:text-5xl font-black text-center mb-16 text-gray-800"
+          >
+            Mengapa Grapholyze?
+          </motion.h2>
 
-        <div className="text-left max-w-3xl mx-auto space-y-4">
-          <p>
-            <b>1. Registrasi & Login</b>
-            <br />
-            Buat akun baru atau login untuk memulai pengalaman analisis tulisan tangan.
-          </p>
-          <p>
-            <b>2. Dashboard (Home)</b>
-            <br />
-            Setelah berhasil login, Anda akan diarahkan ke dashboard utama. Di sini tersedia menu navigasi ke semua fitur.
-          </p>
-          <p>
-            <b>3. Handwriting Analyst (Fitur Utama)</b>
-            <br />
-            - Upload Tulisan → Unggah foto tulisan tangan Anda.
-            <br />
-            - Tulis Langsung → Gunakan canvas digital untuk menulis langsung di aplikasi.
-            <br />
-            Hasil analisis akan ditampilkan secara otomatis dalam bentuk laporan singkat.
-          </p>
-          <p>
-            <b>4. About</b>
-            <br />
-            Halaman ini memberikan informasi lengkap tentang tujuan, teknologi, dan manfaat aplikasi Graphology AI.
-          </p>
+          <div className="grid md:grid-cols-3 gap-8">
+            {features.map((feature, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ y: -10 }}
+                className="bg-white rounded-3xl shadow-xl p-8 text-center border border-purple-100 hover:border-purple-300 transition-all"
+              >
+                <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <feature.icon className="w-10 h-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-3">{feature.title}</h3>
+                <p className="text-gray-600">{feature.desc}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Highlight Box */}
-      <section className="bg-gradient-to-r bg-indigo-800 to-[#6366f1] text-white rounded-xl shadow-md mx-8 md:mx-20 my-10 p-6">
-        <ul className="space-y-3 text-lg font-medium">
-          <li>
-            <b>1. Analisis Tulisan Instan</b> → Dapatkan hasil cepat dan akurat dari tulisan Anda.
-          </li>
-          <li>
-            <b>2. Dua Metode Input</b> → Upload tulisan tangan atau tulis langsung di aplikasi.
-          </li>
-          <li>
-            <b>3. Dashboard Ringkas</b> → Navigasi mudah ke semua fitur.
-          </li>
-          <li>
-            <b>4. Tentang Aplikasi</b> → Kenali lebih dalam fungsi dan manfaat Graphology AI.
-          </li>
-        </ul>
+      {/* How It Works */}
+      <section className="py-20 bg-gradient-to-r from-purple-900 to-indigo-900 text-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.h2
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            className="text-4xl md:text-5xl font-black text-center mb-16"
+          >
+            Cara Kerja Grapholyze
+          </motion.h2>
+
+          <div className="grid md:grid-cols-4 gap-8">
+            {steps.map((step, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: i % 2 === 0 ? -50 : 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.2 }}
+                className="text-center"
+              >
+                <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-6 text-4xl font-black border-4 border-white/30">
+                  {step.num}
+                </div>
+                <h3 className="text-2xl font-bold mb-3">{step.title}</h3>
+                <p className="text-purple-200">{step.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="bg-indigo-900 text-center py-14">
-        <h3 className="text-2xl md:text-3xl font-semibold text-white mb-4">Siap Memulai?</h3>
-        <p className="text-white mb-6">Tentukan kepribadian Anda melalui analisis tulisan tangan dengan AI.</p>
-        <Link href="/handwriting" className="bg-white text-[#4f46e5] font-semibold px-6 py-3 rounded-xl shadow hover:bg-gray-100 transition">
-          Mulai Analisis
-        </Link>
+      {/* Highlight Benefits */}
+      <section className="py-20 px-6">
+        <div className="max-w-5xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl shadow-2xl p-12 text-white"
+          >
+            <h2 className="text-4xl md:text-5xl font-black mb-8">Siap Mengungkap Diri Anda?</h2>
+            <p className="text-xl mb-10 opacity-90">
+              Lebih dari 10.000+ orang telah menemukan kepribadian sejati mereka melalui Grapholyze AI
+            </p>
+            <div className="flex items-center justify-center gap-4 mb-10">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-10 h-10 fill-yellow-400 text-yellow-400" />
+              ))}
+              <span className="text-2xl font-bold">4.9/5 dari pengguna</span>
+            </div>
+
+            <Link href="/handwriting">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-white text-purple-700 font-black text-2xl px-12 py-6 rounded-2xl shadow-2xl hover:shadow-purple-500/50 flex items-center gap-4 mx-auto group"
+              >
+                Mulai Analisis Sekarang
+                <ArrowRight className="w-8 h-8 group-hover:translate-x-2 transition" />
+              </motion.button>
+            </Link>
+          </motion.div>
+        </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-black text-white py-10 px-8 md:px-20">
-        <div className="grid md:grid-cols-3 gap-6">
+      <footer className="bg-black text-white py-16 px-6">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-10">
           <div>
-            <h4 className="font-semibold text-lg mb-2">Grapholyze</h4>
-            <p className="text-gray-400">Platform AI terdepan untuk analisis tulisan tangan dan kepribadian.</p>
+            <h3 className="text-3xl font-black mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+              Grapholyze
+            </h3>
+            <p className="text-gray-400">
+              Capstone Project 2025<br />
+              oleh <span className="text-pink-400 font-bold">Aisyah, Jovita, Putri, Rhena </span>
+            </p>
           </div>
 
           <div>
-            <h4 className="font-semibold text-lg mb-2">Menu</h4>
-            <ul className="text-gray-400 space-y-2">
+            <h4 className="font-bold text-lg mb-4">Fitur</h4>
+            <ul className="space-y-2 text-gray-400">
               <li>Handwriting Analysis</li>
-              <li>Personality Report</li>
-              <li>API Integration</li>
+              <li>Personality Insights</li>
+              <li>Real-time AI Processing</li>
+              <li>Secure & Private</li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold text-lg mb-2">Kontak</h4>
-            <div className="flex gap-4 text-gray-400">
-              <i className="fab fa-instagram"></i>
-              <i className="fab fa-linkedin"></i>
-              <i className="fab fa-github"></i>
-            </div>
+            <h4 className="font-bold text-lg mb-4">Teknologi</h4>
+            <ul className="space-y-2 text-gray-400">
+              <li>Next.js 14</li>
+              <li>Tailwind CSS</li>
+              <li>TensorFlow.js</li>
+              <li>Framer Motion</li>
+            </ul>
+          </div>
+
+          <div className="text-center md:text-right">
+            <p className="text-3xl font-bold text-purple-400 mb-4">10.000+</p>
+            <p className="text-gray-400">Pengguna Puas</p>
           </div>
         </div>
 
-        <p className="text-center text-gray-500 text-sm mt-8">© 2024 Grapholyze. All rights reserved.</p>
+        <div className="text-center mt-12 text-gray-500">
+          © 2025 Grapholyze AI • Dibuat dengan cinta oleh Jovita
+        </div>
       </footer>
     </div>
   );
