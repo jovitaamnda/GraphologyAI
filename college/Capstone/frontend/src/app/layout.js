@@ -1,5 +1,6 @@
 import "./globals.css";
 import NavbarWrapper from "./components/NavbarWrapper";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata = {
   title: "Grapholyze",
@@ -10,8 +11,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <NavbarWrapper />
-        <main>{children}</main>
+        <AuthProvider>
+          <NavbarWrapper />
+          <main>{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );
