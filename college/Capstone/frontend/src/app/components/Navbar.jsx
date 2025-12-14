@@ -3,54 +3,58 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "../../firebase/firebaseConfig"; // sesuaikan path jika perlu
 
 export default function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false); // mobile menu
-  const [profileOpen, setProfileOpen] = useState(false); // profile dropdown
-  const [user, setUser] = useState(undefined);
-  const [imgSrc, setImgSrc] = useState("/profile.jpeg"); // fallback default
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [user, setUser] = useState(null); // null = loading, undefined = tidak login
+  const [imgSrc, setImgSrc] = useState("/profile.jpeg");
   const router = useRouter();
   const pathname = usePathname();
-
   const profileRef = useRef(null);
 
+  // AMBIL USER DARI JWT DI localStorage (MongoDB version)
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser({
-          displayName: firebaseUser.displayName,
-          email: firebaseUser.email,
-          photoURL: firebaseUser.photoURL,
-          uid: firebaseUser.uid,
-        });
-      } else {
-        setUser(null);
-      }
-    });
-    return () => unsub();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setUser(undefined);
+      return;
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1])); // decode JWT
+      setUser({
+        displayName: payload.name || "User",
+        email: payload.email,
+        photoURL: payload.photoURL || null,
+        uid: payload.id,
+      });
+    } catch (err) {
+      console.error("Token invalid, logout");
+      localStorage.removeItem("token");
+      setUser(undefined);
+    }
   }, []);
 
-  // update imgSrc when user changes
+  // Update foto profil
   useEffect(() => {
-    if (user && user.photoURL) {
+    if (user?.photoURL) {
       setImgSrc(user.photoURL);
     } else {
       setImgSrc("/profile.jpeg");
     }
   }, [user]);
 
-  // close profile dropdown on outside click / Escape
+  // Close dropdown kalau klik luar
   useEffect(() => {
-    function handleOutside(e) {
+    const handleOutside = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         setProfileOpen(false);
       }
-    }
-    function handleKey(e) {
+    };
+    const handleKey = (e) => {
       if (e.key === "Escape") setProfileOpen(false);
-    }
+    };
     document.addEventListener("mousedown", handleOutside);
     document.addEventListener("keydown", handleKey);
     return () => {
@@ -59,28 +63,23 @@ export default function Navbar() {
     };
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push("/login");
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
+  // LOGOUT — hanya hapus token
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setUser(undefined);
+    router.push("/login");
   };
 
-  // smart scroll: if on homepage -> scroll, else navigate to homepage with query to auto-scroll
+  // Fungsi scroll tetap sama
   const handleScrollOrNavigate = (id) => {
     if (pathname === "/") {
       const el = document.getElementById(id);
       if (el) {
-        // small timeout to ensure layout/sticky navbar settled
         setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 60);
       }
     } else {
-      // navigate to home with query param; home page should read this and auto-scroll
       router.push(`/?scroll=${encodeURIComponent(id)}`);
     }
-    // close mobile menu if open
     setMobileOpen(false);
   };
 
@@ -96,44 +95,37 @@ export default function Navbar() {
           Grapholyze
         </div>
 
-        {/* Desktop menu */}
+        {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-8">
           <button onClick={() => handleScrollOrNavigate("home")} className="text-gray-700 hover:text-blue-600 transition-colors">
             Home
           </button>
-
           <button onClick={() => handleScrollOrNavigate("handwriting")} className="text-gray-700 hover:text-blue-600 transition-colors">
             Handwriting Analyst
           </button>
-
           <button onClick={() => handleScrollOrNavigate("about")} className="text-gray-700 hover:text-blue-600 transition-colors">
             About
           </button>
 
-          {/* Auth area */}
-          {!user ? (
+          {/* Auth Area */}
+          {user === null ? ( // loading
+            <div className="w-10 h-10 bg-gray-300 rounded-full animate-pulse" />
+          ) : user === undefined ? (
             <button onClick={() => router.push("/login")} className="bg-blue-800 text-white px-5 py-2 rounded-lg hover:bg-blue-500 transition-all">
               Login/Register
             </button>
           ) : (
-            // profile wrapper (relative so dropdown is positioned to this)
             <div ref={profileRef} className="relative">
               <button
-                onClick={() => setProfileOpen((s) => !s)}
-                aria-haspopup="true"
-                aria-expanded={profileOpen}
+                onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 hover:border-blue-500 focus:outline-none"
                 title={user.displayName || "Profile"}
               >
                 <Image src={imgSrc} alt="avatar" width={40} height={40} className="object-cover rounded-full" onError={handleImgError} />
               </button>
 
-              {/* Dropdown: anchored to parent (top-full) */}
-              <div
-                className={`absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl ring-1 ring-black/5 z-50 transition origin-top-right
-                  ${profileOpen ? "block" : "hidden"}`}
-                role="menu"
-              >
+              {/* Dropdown */}
+              <div className={`absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl ring-1 ring-black/5 z-50 transition ${profileOpen ? "block" : "hidden"}`}>
                 <div className="px-4 py-3 border-b">
                   <div className="text-sm font-semibold text-gray-900">{user.displayName || "User"}</div>
                   <div className="text-xs text-gray-500 truncate">{user.email}</div>
@@ -144,7 +136,6 @@ export default function Navbar() {
                     router.push("/profile");
                   }}
                   className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
-                  role="menuitem"
                 >
                   Profile
                 </button>
@@ -154,7 +145,6 @@ export default function Navbar() {
                     handleLogout();
                   }}
                   className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
-                  role="menuitem"
                 >
                   Logout
                 </button>
@@ -163,15 +153,15 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile toggle */}
-        <div className="md:hidden flex items-center">
-          <button onClick={() => setMobileOpen((s) => !s)} className="flex items-center justify-center w-10 h-10 text-gray-700 hover:text-blue-600" aria-label="Toggle menu">
+        {/* Mobile Toggle */}
+        <div className="md:hidden">
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="text-gray-700 hover:text-blue-600">
             {mobileOpen ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
               </svg>
             )}
@@ -179,9 +169,9 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu (separate from profile dropdown) */}
+      {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-white shadow-lg border-t border-gray-200 px-6 py-4 space-y-4">
+        <div className="md:hidden bg-white shadow-lg border-t px-6 py-4 space-y-4">
           <button onClick={() => handleScrollOrNavigate("home")} className="block w-full text-left text-gray-700 hover:text-blue-600">
             Home
           </button>
@@ -192,13 +182,13 @@ export default function Navbar() {
             About
           </button>
 
-          {!user ? (
+          {user === undefined ? (
             <button
               onClick={() => {
                 setMobileOpen(false);
                 router.push("/login");
               }}
-              className="block w-full text-left bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
+              className="block w-full text-left bg-blue-600 text-white px-5 py-2 rounded-lg"
             >
               Login/Register
             </button>
@@ -209,7 +199,7 @@ export default function Navbar() {
                   setMobileOpen(false);
                   router.push("/profile");
                 }}
-                className="block w-full text-left text-gray-700 hover:text-blue-600"
+                className="block w-full text-left text-gray-700"
               >
                 Profile
               </button>
@@ -218,7 +208,7 @@ export default function Navbar() {
                   setMobileOpen(false);
                   handleLogout();
                 }}
-                className="block w-full text-left text-red-500 hover:text-red-700"
+                className="block w-full text-left text-red-500"
               >
                 Logout
               </button>

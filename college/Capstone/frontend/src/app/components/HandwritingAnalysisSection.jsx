@@ -42,8 +42,11 @@ export default function HandwritingAnalysisSection() {
             <li>✅ Laporan visual kepribadian</li>
           </ul>
 
-          <button onClick={() => router.push("homeanalisis")} className="mt-4 bg-indigo-600 text-white font-semibold px-6 py-3 rounded-xl shadow hover:bg-indigo-700 transition-all duration-300 w-fit">
-            Coba Sekarang
+          <button
+            onClick={() => router.push("homeanalisis")}
+            className="group inline-flex items-center gap-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-lg px-8 py-5 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 w-fit"
+          >
+            Coba Sekarang →
           </button>
         </div>
       </div>

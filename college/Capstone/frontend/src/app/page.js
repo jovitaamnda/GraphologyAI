@@ -1,3 +1,4 @@
+// src/app/page.jsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,31 +16,24 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Jika URL mengandung hash (mis. /#handwriting), scroll ke element tersebut setelah mount
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const hash = window.location.hash;
-    if (hash) {
-      // delay sedikit supaya DOM sudah ter-render
+    if (typeof window !== "undefined" && window.location.hash) {
       setTimeout(() => {
-        const id = hash.replace("#", "");
+        const id = window.location.hash.replace("#", "");
         const el = document.getElementById(id);
-        if (el) el.scrollIntoView({ behavior: "smooth" });
-      }, 80);
+        el?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     }
   }, []);
 
   return (
-    // beri pt supaya navbar fixed tidak menutup konten
-    <main className="relative min-h-screen overflow-hidden pt-20">
-      {/* ✨ Loading shimmer */}
+    <main className="relative min-h-screen pt-20">
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0a1a] transition-opacity duration-700">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0a1a]">
           <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
       <Navbar />
-      {/* PENTING: setiap section harus memiliki id yang sesuai */}
       <HeroSection id="home" />
       <HandwritingAnalysisSection id="handwriting" />
       <AboutSection id="about" />

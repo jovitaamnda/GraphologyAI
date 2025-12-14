@@ -1,25 +1,36 @@
-// backend/server.js
+// backend/index.js atau server.js
 require("dotenv").config();
 const express = require("express");
-const cors = require("cors");
-const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const authRoutes = require("./routes/auth");
+const cors = require("cors");
+
+const authRoutes = require("./routes/auth"); // pastikan path-nya benar
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
-app.use(bodyParser.json());
+app.use(cors());
+app.use(express.json());
+
+// Konek ke MongoDB
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB Connected via Mongoose!"))
+  .catch((err) => {
+    console.error("MongoDB gagal connect:", err);
+    process.exit(1);
+  });
 
 // Routes
 app.use("/api/auth", authRoutes);
 
-// MongoDB connection
-mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.log(err));
+// Test route
+app.get("/", (req, res) => {
+  res.send("Grapholyze Backend + MongoDB Atlas = JALAN!");
+});
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Backend jalan di http://localhost:${PORT}`);
+  console.log("Coba login: POST /api/auth/login → admin@gmail.com + admin123");
+});

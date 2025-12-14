@@ -9,27 +9,67 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    // Simulasi register sukses
-    document.cookie = "user_registered=true; path=/; max-age=604800";
-    document.cookie = "user_email=" + e.target.email.value + "; path=/; max-age=604800";
+    const formData = new FormData(e.target);
+    const name = formData.get("name")?.trim();
+    const email = formData.get("email")?.toLowerCase().trim();
+    const password = formData.get("password");
+    const confirmPassword = formData.get("confirmPassword");
 
-    // Munculkan animasi sukses
-    setIsSuccess(true);
+    // Validasi
+    if (!name || !email || !password) {
+      setError("Semua field wajib diisi!");
+      setLoading(false);
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Password tidak cocok!");
+      setLoading(false);
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password minimal 6 karakter");
+      setLoading(false);
+      return;
+    }
 
-    // 2 detik kemudian redirect ke login
-    setTimeout(() => {
-      router.push("/login?registered=true");
-    }, 2000);
+    try {
+      const res = await fetch("http://localhost:5001/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && (data.success || data.token)) {
+        setIsSuccess(true);
+        setTimeout(() => {
+          router.push("/login?registered=true");
+        }, 2000);
+      } else {
+        setError(data.message || "Gagal mendaftar");
+      }
+    } catch (err) {
+      console.error("Register error:", err);
+      setError("Gagal terhubung ke server");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const masukSebagaiAdmin = () => {
-    document.cookie = "admin_access=true; path=/; max-age=86400";
-    window.location.href = "/admin";
+    localStorage.setItem("token", "admin-demo-token-2025");
+    localStorage.setItem("user", JSON.stringify({ email: "admin@grapholyze.com", name: "Admin Demo" }));
+    router.push("/admin");
   };
 
   return (
@@ -41,35 +81,23 @@ export default function RegisterPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600 rounded-full blur-3xl opacity-20"></div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="relative z-10 w-full max-w-md"
-      >
+      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="relative z-10 w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-10">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-            className="inline-block"
-          >
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, delay: 0.2 }} className="inline-block">
             <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl flex items-center justify-center shadow-2xl mx-auto mb-6">
               <Sparkles className="w-14 h-14 text-white" />
             </div>
-            <h1 className="text-6xl font-black text-white mb-3">
-              Grapholyze
-            </h1>
+            <h1 className="text-6xl font-black text-white mb-3">Grapholyze</h1>
             <p className="text-purple-200 text-xl font-light">Daftar & Mulai Analisis Tulisan Tangan</p>
           </motion.div>
         </div>
 
         {/* Register Card */}
         <div className="bg-white/10 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 p-10">
-          <h2 className="text-3xl font-bold text-white text-center mb-8">
-            Buat Akun Baru
-          </h2>
+          <h2 className="text-3xl font-bold text-white text-center mb-8">Buat Akun Baru</h2>
+
+          {error && <div className="bg-red-500/20 border border-red-500 text-white p-3 rounded-xl text-center mb-4">{error}</div>}
 
           <form onSubmit={handleRegister} className="space-y-6">
             <div>
@@ -107,16 +135,12 @@ export default function RegisterPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
-                  placeholder="Minimal 8 karakter"
+                  placeholder="Minimal 6 karakter"
                   required
-                  minLength="8"
+                  minLength="6"
                   className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-purple-300 focus:outline-none focus:ring-4 focus:ring-purple-500/50 transition"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2"
-                >
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2">
                   {showPassword ? <EyeOff className="w-5 h-5 text-purple-300" /> : <Eye className="w-5 h-5 text-purple-300" />}
                 </button>
               </div>
@@ -128,15 +152,12 @@ export default function RegisterPage() {
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-300" />
                 <input
                   type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
                   placeholder="Ketik ulang password"
                   required
                   className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-purple-300 focus:outline-none focus:ring-4 focus:ring-purple-500/50 transition"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2"
-                >
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2">
                   {showConfirmPassword ? <EyeOff className="w-5 h-5 text-purple-300" /> : <Eye className="w-5 h-5 text-purple-300" />}
                 </button>
               </div>
@@ -146,10 +167,11 @@ export default function RegisterPage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              className="w-full py-5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-xl rounded-2xl shadow-2xl hover:shadow-purple-600/50 flex items-center justify-center gap-3 group"
+              disabled={loading}
+              className="w-full py-5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-xl rounded-2xl shadow-2xl hover:shadow-purple-600/50 flex items-center justify-center gap-3 group disabled:opacity-70"
             >
               <CheckCircle className="w-6 h-6" />
-              Daftar Sekarang
+              {loading ? "Mendaftar..." : "Daftar Sekarang"}
               <Zap className="w-6 h-6 group-hover:translate-x-1 transition" />
             </motion.button>
           </form>
@@ -161,7 +183,7 @@ export default function RegisterPage() {
             </a>
           </div>
 
-          {/* Tombol Admin */}
+          {/* Tombol Admin Demo */}
           <div className="pt-8 border-t border-white/10">
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -178,16 +200,8 @@ export default function RegisterPage() {
 
         {/* Success Animation */}
         {isSuccess && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50"
-          >
-            <motion.div
-              initial={{ y: 50 }}
-              animate={{ y: 0 }}
-              className="bg-white rounded-3xl p-10 text-center shadow-2xl"
-            >
+          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+            <motion.div initial={{ y: 50 }} animate={{ y: 0 }} className="bg-white rounded-3xl p-10 text-center shadow-2xl">
               <CheckCircle className="w-24 h-24 text-green-500 mx-auto mb-6" />
               <h3 className="text-3xl font-bold text-gray-800 mb-4">Pendaftaran Berhasil!</h3>
               <p className="text-gray-600 text-lg">Akun kamu sudah siap. Mengalihkan ke login...</p>
@@ -195,23 +209,12 @@ export default function RegisterPage() {
           </motion.div>
         )}
 
-        {/* Footer GraphoTeam - Cantik & Aman */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 0.8 }}
-          className="text-center mt-12 text-purple-100"
-        >
+        {/* Footer */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.8 }} className="text-center mt-12 text-purple-100">
           <p className="text-sm opacity-80 mb-2">© 2025 Grapholyze AI • Capstone Project 2025</p>
-          <p className="text-2xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
-            GraphoTeam
-          </p>
-          <p className="text-purple-200 text-base mt-3 font-medium">
-            Aisyah • Jovita • Putri • Rhena
-          </p>
-          <p className="text-purple-300 text-xs mt-4 opacity-70">
-            Dibuat dengan cinta, kopi, dan deadline sidang
-          </p>
+          <p className="text-2xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">GraphoTeam</p>
+          <p className="text-purple-200 text-base mt-3 font-medium">Aisyah • Jovita • Putri • Rhena</p>
+          <p className="text-purple-300 text-xs mt-4 opacity-70">Dibuat dengan cinta, kopi, dan deadline sidang</p>
         </motion.div>
       </motion.div>
     </div>

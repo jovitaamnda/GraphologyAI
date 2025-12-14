@@ -12,14 +12,19 @@ router.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
   try {
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: "Email already exists" });
+    if (existingUser) return res.status(400).json({ message: "Email sudah terdaftar" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ name, email, password: hashedPassword });
     await user.save();
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1d" });
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    // BALIKIN TOKEN SAMA KAYAK LOGIN
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
+    res.json({
+      success: true,
+      token,
+      user: { id: user._id, name: user.name, email: user.email },
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

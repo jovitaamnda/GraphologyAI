@@ -17,7 +17,6 @@ export default function HeroSection({ id }) {
     setIsClient(true);
 
     const handleScroll = () => {
-      // pause animasi saat user scroll jauh
       if (window.scrollY > 500) setIsGalaxyActive(false);
       else setIsGalaxyActive(true);
 

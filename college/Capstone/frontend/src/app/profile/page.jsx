@@ -3,215 +3,194 @@
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged, signOut, updateProfile, updateEmail, updatePassword } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { auth, db, storage } from "../../firebase/firebaseConfig";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [loadingAuth, setLoadingAuth] = useState(true);
   const [user, setUser] = useState(null);
-
-  // form state
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  // upload state
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-
-  // hidden input ref
+  const [error, setError] = useState("");
   const fileInputRef = useRef(null);
 
+  // Ambil user dari localStorage (token JWT)
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      setLoadingAuth(false);
-      if (u) {
-        setUser(u);
-        setName(u.displayName || "");
-        setEmail(u.email || "");
-        try {
-          const snap = await getDoc(doc(db, "users", u.uid));
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data.phone) setPhone(data.phone);
-          }
-        } catch (err) {
-          console.error("fetch user doc error:", err);
-        }
-      } else {
-        setUser(null);
-      }
-    });
-    return () => unsub();
-  }, []);
+    const token = localStorage.getItem("token");
+    const savedUser = localStorage.getItem("user");
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push("/");
-  };
+    if (!token || !savedUser) {
+      router.push("/login");
+      return;
+    }
 
+    try {
+      const userData = JSON.parse(savedUser);
+      setUser(userData);
+    } catch (err) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      router.push("/login");
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
+  // Simpan perubahan profil (hanya update localStorage & backend)
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!user) return alert("User not logged in");
+    if (!user) return;
 
     setSaving(true);
+    setError("");
+
     try {
-      if (name !== user.displayName) {
-        await updateProfile(auth.currentUser, { displayName: name });
+      const res = await fetch("http://localhost:5001/api/auth/update-profile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          name: user.name,
+          email: user.email,
+          phone: user.phone || "",
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+        setUser(data.user);
+        alert("Profile berhasil diperbarui!");
+      } else {
+        setError(data.message || "Gagal menyimpan");
       }
-
-      if (email !== user.email) {
-        try {
-          await updateEmail(auth.currentUser, email);
-        } catch (err) {
-          alert("Gagal mengubah email, login ulang dulu.");
-        }
-      }
-
-      if (password) {
-        try {
-          await updatePassword(auth.currentUser, password);
-        } catch (err) {
-          alert("Gagal mengubah password, login ulang dulu.");
-        }
-      }
-
-      await setDoc(doc(db, "users", user.uid), { phone }, { merge: true });
-
-      alert("Profile berhasil disimpan.");
-      setUser({ ...user, displayName: name, email });
-      setPassword("");
     } catch (err) {
-      console.error(err);
-      alert("Terjadi kesalahan saat menyimpan.");
+      setError("Gagal terhubung ke server");
     } finally {
       setSaving(false);
     }
   };
 
-  // fungsi upload foto otomatis setelah pilih
+  // Upload foto profil (simpan ke Cloudinary atau backend)
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+
     setUploading(true);
     setUploadProgress(0);
 
-    const filename = `profile_${Date.now()}.${file.name.split(".").pop()}`;
-    const storageRef = ref(storage, `users/${user.uid}/${filename}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "grapholyze"); // ganti kalau pakai Cloudinary
 
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        setUploadProgress(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100));
-      },
-      (error) => {
-        console.error("Upload error:", error);
-        alert("Upload gagal. Coba lagi.");
-        setUploading(false);
-      },
-      async () => {
-        try {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          await updateProfile(auth.currentUser, { photoURL: downloadURL });
-          await setDoc(doc(db, "users", user.uid), { photoURL: downloadURL }, { merge: true });
-          setUser({ ...user, photoURL: downloadURL });
-          alert("Foto profil berhasil diperbarui!");
-        } catch (err) {
-          console.error("Saving photoURL error:", err);
-          alert("Gagal menyimpan photoURL.");
-        } finally {
-          setUploading(false);
-          setUploadProgress(0);
-        }
+    try {
+      // Ganti URL ini kalau kamu pakai backend sendiri
+      const res = await fetch("https://api.cloudinary.com/v1_1/dxxxxx/image/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.secure_url) {
+        // Simpan ke backend atau langsung ke localStorage
+        const updatedUser = { ...user, photoURL: data.secure_url };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        alert("Foto profil berhasil diupdate!");
       }
-    );
+    } catch (err) {
+      alert("Upload gagal, coba lagi");
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    router.push("/login");
   };
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
 
-  if (loadingAuth) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center text-2xl">Loading...</div>;
+  }
 
-  if (!user)
+  if (!user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <p className="mb-4">Kamu belum login.</p>
-        <button onClick={() => router.push("/login")} className="bg-blue-700 text-white px-4 py-2 rounded">
-          Login
+        <p className="mb-4 text-xl">Kamu belum login.</p>
+        <button onClick={() => router.push("/login")} className="bg-blue-600 text-white px-6 py-3 rounded-lg">
+          Login Sekarang
         </button>
       </div>
     );
+  }
 
   const avatarSrc = user.photoURL || "/profile.jpeg";
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto py-12 px-6">
-        <div className="flex flex-col md:flex-row items-stretch gap-8">
-          {/* Left purple panel */}
-          <div className="md:w-1/3 bg-purple-500 rounded-lg p-10 flex flex-col items-center justify-center text-center">
-            {/* Avatar (klik untuk upload) */}
-            <div onClick={handleAvatarClick} className="relative w-40 h-40 rounded-full bg-purple-700 flex items-center justify-center mb-6 overflow-hidden shadow-lg cursor-pointer group" title="Klik untuk ganti foto profil">
-              <Image src={avatarSrc} alt="avatar" width={160} height={160} className="w-full h-full object-cover rounded-full" />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Left Panel */}
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div onClick={handleAvatarClick} className="relative w-40 h-40 mx-auto mb-6 rounded-full overflow-hidden ring-4 ring-purple-200 cursor-pointer group" title="Klik untuk ganti foto">
+              <Image src={avatarSrc} alt="avatar" width={160} height={160} className="w-full h-full object-cover" />
               {uploading && (
-                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white text-sm rounded-full">
-                  <div>Uploading...</div>
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white">
                   <div>{uploadProgress}%</div>
                 </div>
               )}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-sm transition">Klik untuk ubah foto</div>
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white">Ubah Foto</div>
             </div>
-
             <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
 
-            <h2 className="text-2xl md:text-3xl font-semibold text-white">{name || "User"}</h2>
+            <h2 className="text-3xl font-bold text-gray-800">{user.name || "User"}</h2>
+            <p className="text-gray-600">{user.email}</p>
+            <p className="text-sm text-gray-500 mt-2">{user.phone || "No phone number"}</p>
           </div>
 
-          {/* Right white card */}
-          <div className="md:w-2/3 bg-white rounded-2xl shadow-md p-8">
-            <h1 className="text-3xl font-serif mb-1">Profile Settings</h1>
-            <p className="text-sm text-gray-500 mb-6">Manage your personal information</p>
+          {/* Right Panel - Form */}
+          <div className="md:col-span-2 bg-white rounded-2xl shadow-xl p-8">
+            <h1 className="text-3xl font-bold mb-2">Profile Settings</h1>
+            <p className="text-gray-600 mb-8">Kelola informasi akun kamu</p>
 
-            <form onSubmit={handleSave} className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">Full Name</label>
-                <input value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-300" placeholder="Full name" />
-              </div>
+            {error && <div className="bg-red-100 border border-red-400 text-red-700 p-4 rounded mb-6">{error}</div>}
 
+            <form onSubmit={handleSave} className="space-y-6">
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Email Address</label>
-                <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-300" placeholder="Email" />
-                <p className="text-xs text-gray-400 mt-1">Mengubah email mungkin memerlukan login ulang (untuk keamanan).</p>
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">Phone Number</label>
-                <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-300" placeholder="Phone number" />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">Change Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
                 <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-300"
-                  placeholder="New password (leave blank if not changing)"
+                  type="text"
+                  value={user.name || ""}
+                  onChange={(e) => setUser({ ...user, name: e.target.value })}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Nama kamu"
                 />
               </div>
 
-              <div className="mt-6">
-                <button type="submit" disabled={saving} className="bg-purple-500 text-white px-6 py-3 rounded-lg shadow hover:opacity-95 disabled:opacity-60">
-                  {saving ? "Saving..." : "Save Changes"}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input type="email" value={user.email || ""} onChange={(e) => setUser({ ...user, email: e.target.value })} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="email@contoh.com" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nomor HP (opsional)</label>
+                <input type="text" value={user.phone || ""} onChange={(e) => setUser({ ...user, phone: e.target.value })} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="08123456789" />
+              </div>
+
+              <div className="pt-6 flex gap-4">
+                <button type="submit" disabled={saving} className="bg-purple-600 text-white px-8 py-3 rounded-lg hover:bg-purple-700 disabled:opacity-60 transition">
+                  {saving ? "Menyimpan..." : "Simpan Perubahan"}
                 </button>
-                <button type="button" onClick={handleLogout} className="ml-4 text-red-500 px-4 py-2 rounded border border-red-100">
+                <button type="button" onClick={handleLogout} className="border border-red-500 text-red-500 px-6 py-3 rounded-lg hover:bg-red-50 transition">
                   Logout
                 </button>
               </div>

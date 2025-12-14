@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Download, Users, FileText } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -37,11 +37,11 @@ export default function AdminDashboard() {
 
   const handleExport = () => {
     const ws = XLSX.utils.json_to_sheet(
-      recentUsers.map(u => ({
+      recentUsers.map((u) => ({
         Nama: u.name,
         Email: u.email,
         "Jumlah Tes": u.tes,
-        "Tipe Terakhir": u.tipe
+        "Tipe Terakhir": u.tipe,
       }))
     );
     const wb = XLSX.utils.book_new();
@@ -51,125 +51,95 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-10 py-6">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+      {/* HILANGIN NAVBAR → LANGSUNG MULAI DARI SINI */}
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white px-10 py-8 shadow-lg">
+        <h1 className="text-4xl font-bold">Dashboard Admin</h1>
+        <p className="text-indigo-100 mt-2">Selamat datang kembali, Admin!</p>
       </div>
 
       <div className="p-8 max-w-7xl mx-auto space-y-10">
-        {/* Stats Cards - dengan animasi masuk */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            whileHover={{ scale: 1.05 }}
-            className="bg-white rounded-3xl shadow-lg p-8 border border-gray-100"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium">Total User</p>
-                <p className="text-6xl font-bold text-gray-900 mt-3">{totalUsers}</p>
-              </div>
-              <div className="bg-blue-100 p-5 rounded-2xl">
-                <Users className="w-12 h-12 text-blue-600" />
-              </div>
-            </div>
-          </motion.button>
-
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            whileHover={{ scale: 1.05 }}
-            className="bg-white rounded-3xl shadow-lg p-8 border border-gray-100"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium">Total Tes</p>
-                <p className="text-6xl font-bold text-gray-900 mt-3">{totalTests}</p>
-              </div>
-              <div className="bg-green-100 p-5 rounded-2xl">
-                <FileText className="w-12 h-12 text-green-600" />
-              </div>
-            </div>
-          </motion.button>
-
-          {/* Grafik Enneagram - ANIMASI SUPER LEMBUT */}
+        {/* Stats Cards — FIT CONTENT & CANTIK */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Total User */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="bg-white rounded-3xl shadow-lg p-8 border border-gray-100"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            whileHover={{ scale: 1.03 }}
+            className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 flex items-center justify-between"
           >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold">Grafik Enneagram</h3>
-              <div className="w-8 h-8 border-2 border-gray-300 rounded-full animate-spin" />
+            <div>
+              <p className="text-gray-600 text-sm font-medium">Total User</p>
+              <p className="text-4xl font-bold text-gray-900 mt-1">{totalUsers}</p>
+              <p className="text-xs text-green-600 mt-2">+12% bulan ini</p>
             </div>
+            <div className="bg-blue-100 p-4 rounded-xl">
+              <Users className="w-10 h-10 text-blue-600" />
+            </div>
+          </motion.div>
 
-            <div className="flex items-center justify-center gap-10">
-              <div className="relative w-56 h-56">
+          {/* Total Tes */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            whileHover={{ scale: 1.03 }}
+            className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 flex items-center justify-between"
+          >
+            <div>
+              <p className="text-gray-600 text-sm font-medium">Total Tes</p>
+              <p className="text-4xl font-bold text-gray-900 mt-1">{totalTests}</p>
+              <p className="text-xs text-green-600 mt-2">Rata-rata 4/hari</p>
+            </div>
+            <div className="bg-green-100 p-4 rounded-xl">
+              <FileText className="w-10 h-10 text-green-600" />
+            </div>
+          </motion.div>
+
+          {/* Grafik Enneagram */}
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: 0.2 }} className="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
+            <h3 className="text-lg font-bold mb-4 text-gray-800">Distribusi Enneagram</h3>
+            <div className="flex items-center justify-center gap-6">
+              <div className="relative w-40 h-40">
                 <svg viewBox="0 0 200 200" className="w-full h-full">
-                  {/* Background circle */}
-                  <circle cx="100" cy="100" r="90" fill="none" stroke="#f3f4f6" strokeWidth="18" />
-
-                  {/* Animated segments */}
+                  <circle cx="100" cy="100" r="85" fill="none" stroke="#f3f4f6" strokeWidth="18" />
                   {segments.map((seg, i) => (
                     <motion.circle
                       key={seg.type}
                       cx="100"
                       cy="100"
-                      r="90"
+                      r="85"
                       fill="none"
                       stroke={seg.color}
                       strokeWidth="18"
-                      strokeDasharray={`${seg.percent * 2.83} 283`}
-                      strokeDashoffset={-seg.start * 2.83}
-                      initial={{ strokeDashoffset: 283 }}
-                      animate={{ strokeDashoffset: -seg.start * 2.83 }}
+                      strokeDasharray={`${seg.percent * 2.67} 267`}
+                      strokeDashoffset={-seg.start * 2.67}
+                      initial={{ strokeDashoffset: 267 }}
+                      animate={{ strokeDashoffset: -seg.start * 2.67 }}
                       transition={{ duration: 1.5, delay: i * 0.2, ease: "easeOut" }}
-                      className="cursor-pointer"
                       strokeLinecap="round"
-                      style={{
-                        filter: selectedType === seg.type ? "brightness(1.3)" : "brightness(1)",
-                      }}
+                      className="cursor-pointer"
                       onClick={() => setSelectedType(seg.type)}
                     />
                   ))}
-
-                  {/* Center number with pulse */}
-                  <motion.text
-                    x="100"
-                    y="110"
-                    textAnchor="middle"
-                    className="text-6xl font-bold fill-gray-800"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.8, delay: 1 }}
-                  >
+                  <text x="100" y="105" textAnchor="middle" className="text-5xl font-bold fill-gray-800">
                     9
-                  </motion.text>
+                  </text>
                 </svg>
               </div>
 
-              {/* Legend - animasi masuk */}
-              <div className="space-y-4">
-                {enneagramData.map((item, i) => (
-                  <motion.div
+              <div className="space-y-2">
+                {enneagramData.map((item) => (
+                  <div
                     key={item.type}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.8 + i * 0.1 }}
-                    className={`flex items-center gap-3 cursor-pointer p-3 rounded-xl transition-all ${
-                      selectedType === item.type ? "bg-gray-100 shadow-md" : "hover:bg-gray-50"
-                    }`}
                     onClick={() => setSelectedType(item.type)}
+                    className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg text-xs transition-all ${selectedType === item.type ? "bg-gray-100 font-semibold" : "hover:bg-gray-50"}`}
                   >
-                    <div className="w-6 h-6 rounded-full" style={{ backgroundColor: item.color }} />
-                    <div>
-                      <div className="font-semibold text-gray-800">{item.label}</div>
-                      <div className="text-sm text-gray-600">{item.value} orang</div>
-                    </div>
-                  </motion.div>
+                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span>
+                      {item.label}: {item.value}
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -177,66 +147,55 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabel + Export */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.4 }}
-            className="lg:col-span-2 bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden"
-          >
-            <div className="px-8 py-6 border-b border-gray-200">
-              <h3 className="text-xl font-bold">Data User</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.4 }} className="lg:col-span-2 bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-bold">Pengguna Terakhir</h3>
             </div>
-            <table className="w-full">
-              <thead className="bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
-                <tr>
-                  <th className="px-8 py-4 text-left">Nama</th>
-                  <th className="px-8 py-4 text-left">Email</th>
-                  <th className="px-8 py-4 text-center">Jumlah Tes</th>
-                  <th className="px-8 py-4 text-center">Tipe Terakhir</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {recentUsers.map((user, i) => (
-                  <motion.tr
-                    key={user.email}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.6 + i * 0.1 }}
-                    className="hover:bg-gray-50 transition"
-                  >
-                    <td className="px-8 py-5 font-medium">{user.name}</td>
-                    <td className="px-8 py-5 text-gray-600">{user.email}</td>
-                    <td className="px-8 py-5 text-center">{user.tes}</td>
-                    <td className="px-8 py-5 text-center">
-                      <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-purple-100 text-purple-800">
-                        {user.tipe}
-                      </span>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-600 font-medium uppercase text-xs">
+                  <tr>
+                    <th className="px-6 py-3 text-left">Nama</th>
+                    <th className="px-6 py-3 text-left">Email</th>
+                    <th className="px-6 py-3 text-center">Tes</th>
+                    <th className="px-6 py-3 text-center">Tipe</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {recentUsers.map((user) => (
+                    <tr key={user.email} className="hover:bg-gray-50 transition">
+                      <td className="px-6 py-4 font-medium">{user.name}</td>
+                      <td className="px-6 py-4 text-gray-600">{user.email}</td>
+                      <td className="px-6 py-4 text-center font-semibold">{user.tes}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800">Tipe {user.tipe}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.6 }}
-            className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 flex flex-col justify-between"
+            className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl shadow-lg p-6 text-white flex flex-col justify-between"
           >
             <div>
               <h3 className="text-xl font-bold mb-2">Export Data</h3>
-              <p className="text-gray-600 text-sm">Download semua data dalam format Excel</p>
+              <p className="text-white/80 text-sm">Download semua data pengguna dalam format Excel</p>
             </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleExport}
-              className="mt-8 w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-5 rounded-2xl shadow-xl flex items-center justify-center gap-3"
+              className="mt-6 w-full bg-white text-indigo-700 font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition"
             >
-              <Download className="w-6 h-6" />
-              Download / E5 OOF
+              <Download className="w-5 h-5" />
+              Download Excel
             </motion.button>
           </motion.div>
         </div>
