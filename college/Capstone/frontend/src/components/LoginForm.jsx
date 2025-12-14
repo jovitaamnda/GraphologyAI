@@ -69,35 +69,19 @@ export default function LoginForm() {
     <form onSubmit={handleSubmit} className="space-y-4" aria-live="polite">
       {/* Email */}
       <div className="text-left">
-        <label className="block text-gray-700 font-medium mb-2">Email</label>
+        <label className="block text-white font-medium mb-2">Email</label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-          <Input
-            type="email"
-            placeholder="nama@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="pl-10 py-6 text-base"
-            required
-            autoComplete="email"
-          />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-200" size={20} />
+          <Input type="email" placeholder="nama@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10 py-6 text-base" required autoComplete="email" />
         </div>
       </div>
 
       {/* Password */}
       <div className="text-left">
-        <label className="block text-gray-700 font-medium mb-2">Password</label>
+        <label className="block text-white font-medium mb-2">Password</label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-          <Input
-            type={showPassword ? "text" : "password"}
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="pl-10 pr-10 py-6 text-base"
-            required
-            autoComplete="current-password"
-          />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-200" size={20} />
+          <Input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 pr-10 py-6 text-base" required autoComplete="current-password" />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
@@ -112,40 +96,22 @@ export default function LoginForm() {
       {/* Remember Me */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Checkbox
-            id="remember"
-            checked={rememberMe}
-            onCheckedChange={(val) => setRememberMe(!!val)}
-          />
+          <Checkbox id="remember" checked={rememberMe} onCheckedChange={(val) => setRememberMe(!!val)} />
           <label htmlFor="remember" className="text-gray-700 text-sm cursor-pointer">
             Ingat saya
           </label>
         </div>
 
-        <button
-          type="button"
-          className="text-[#7B61FF] text-sm hover:underline"
-          onClick={() => router.push("/forgot-password")}
-        >
+        <button type="button" className="text-[#7B61FF] text-sm hover:underline" onClick={() => router.push("/forgot-password")}>
           Lupa password?
         </button>
       </div>
 
       {/* Error */}
-      {error && (
-        <div className="rounded-md bg-red-50 border border-red-200 p-3 text-red-700 text-sm">
-          {error}
-        </div>
-      )}
+      {error && <div className="rounded-md bg-red-50 border border-red-200 p-3 text-red-700 text-sm">{error}</div>}
 
       {/* Submit */}
-      <Button
-        type="submit"
-        disabled={loading}
-        className={`w-full bg-[#7B61FF] hover:bg-[#6B51EF] text-white py-6 text-base font-semibold rounded-lg ${
-          loading ? "opacity-80 pointer-events-none" : ""
-        }`}
-      >
+      <Button type="submit" disabled={loading} className={`w-full bg-[#7B61FF] hover:bg-[#6B51EF] text-white py-6 text-base font-semibold rounded-lg ${loading ? "opacity-80 pointer-events-none" : ""}`}>
         {loading ? "Memproses..." : "Masuk"}
       </Button>
     </form>
