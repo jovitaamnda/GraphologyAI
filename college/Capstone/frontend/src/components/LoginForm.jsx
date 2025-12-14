@@ -6,8 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
-import { auth } from "@/firebase/firebaseConfig";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -22,62 +20,46 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // baca preferensi yang pernah disimpan (agar checkbox mencerminkan pilihan terakhir)
+  // load rememberMe preference (UI only)
   useEffect(() => {
     try {
       const saved = localStorage.getItem("rememberMe");
       if (saved !== null) setRememberMe(saved === "true");
-    } catch (e) {
-      console.warn("Tidak bisa akses localStorage:", e);
-    }
+    } catch {}
   }, []);
 
-  // simpan preferensi saat berubah (tidak wajib, tapi berguna)
   useEffect(() => {
     try {
       localStorage.setItem("rememberMe", rememberMe ? "true" : "false");
-    } catch (e) {
-      // ignore
-    }
+    } catch {}
   }, [rememberMe]);
 
+  // 🔐 LOGIN KE BACKEND (MongoDB + JWT)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      // Pastikan setPersistence dipanggil sebelum signIn...
-      const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
-      await setPersistence(auth, persistence);
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+      });
 
-      // lalu sign in
-      const userCred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Email atau password salah");
+      }
 
-      // simpan preferensi (opsional)
-      try {
-        localStorage.setItem("rememberMe", rememberMe ? "true" : "false");
-      } catch (e) {}
-
-      // sukses -> redirect
+      // ✅ LOGIN SUKSES
+      // cookie JWT sudah diset oleh server
       router.push("/");
     } catch (err) {
-      console.error("Login error:", err);
-      const code = err?.code || "";
-
-      if (code.includes("auth/invalid-credential")) {
-        setError("Email atau password salah.");
-      } else if (code.includes("auth/user-not-found")) {
-        setError("Akun tidak ditemukan. Silakan daftar terlebih dahulu.");
-      } else if (code.includes("auth/wrong-password")) {
-        setError("Password salah. Coba lagi.");
-      } else if (code.includes("auth/invalid-email")) {
-        setError("Format email tidak valid.");
-      } else if (code.includes("auth/too-many-requests")) {
-        setError("Terlalu banyak percobaan. Coba lagi nanti.");
-      } else {
-        setError("Gagal masuk. Periksa koneksi atau coba lagi.");
-      }
+      setError(err.message || "Gagal masuk. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -85,25 +67,41 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" aria-live="polite">
-      {/* Email Field */}
+      {/* Email */}
       <div className="text-left">
         <label className="block text-gray-700 font-medium mb-2">Email</label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <Input type="email" placeholder="nama@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10 py-6 text-base" required autoComplete="email" />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          <Input
+            type="email"
+            placeholder="nama@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="pl-10 py-6 text-base"
+            required
+            autoComplete="email"
+          />
         </div>
       </div>
 
-      {/* Password Field */}
+      {/* Password */}
       <div className="text-left">
         <label className="block text-gray-700 font-medium mb-2">Password</label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <Input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 pr-10 py-6 text-base" required autoComplete="current-password" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          <Input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="pl-10 pr-10 py-6 text-base"
+            required
+            autoComplete="current-password"
+          />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
           >
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -111,25 +109,43 @@ export default function LoginForm() {
         </div>
       </div>
 
-      {/* Remember Me & Forgot Password */}
+      {/* Remember Me */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Checkbox id="remember" checked={rememberMe} onCheckedChange={(val) => setRememberMe(!!val)} />
+          <Checkbox
+            id="remember"
+            checked={rememberMe}
+            onCheckedChange={(val) => setRememberMe(!!val)}
+          />
           <label htmlFor="remember" className="text-gray-700 text-sm cursor-pointer">
             Ingat saya
           </label>
         </div>
 
-        <button type="button" className="text-[#7B61FF] text-sm hover:underline" onClick={() => router.push("/forgot-password")}>
+        <button
+          type="button"
+          className="text-[#7B61FF] text-sm hover:underline"
+          onClick={() => router.push("/forgot-password")}
+        >
           Lupa password?
         </button>
       </div>
 
-      {/* Error Message */}
-      {error && <div className="rounded-md bg-red-50 border border-red-200 p-3 text-red-700 text-sm">{error}</div>}
+      {/* Error */}
+      {error && (
+        <div className="rounded-md bg-red-50 border border-red-200 p-3 text-red-700 text-sm">
+          {error}
+        </div>
+      )}
 
-      {/* Submit Button */}
-      <Button type="submit" disabled={loading} className={`w-full ${loading ? "opacity-80 pointer-events-none" : ""} bg-[#7B61FF] hover:bg-[#6B51EF] text-white py-6 text-base font-semibold rounded-lg`}>
+      {/* Submit */}
+      <Button
+        type="submit"
+        disabled={loading}
+        className={`w-full bg-[#7B61FF] hover:bg-[#6B51EF] text-white py-6 text-base font-semibold rounded-lg ${
+          loading ? "opacity-80 pointer-events-none" : ""
+        }`}
+      >
         {loading ? "Memproses..." : "Masuk"}
       </Button>
     </form>
