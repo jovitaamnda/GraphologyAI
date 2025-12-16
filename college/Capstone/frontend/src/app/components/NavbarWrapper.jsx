@@ -6,7 +6,7 @@ import Navbar from "./Navbar";
 export default function NavbarWrapper() {
   const pathname = usePathname();
 
-  const hideOn = ["/login"];
+  const hideOn = ["/login", "/register"];
 
   if (hideOn.includes(pathname)) {
     return null;
