@@ -58,21 +58,16 @@ export default function RegisterForm() {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-      
+
       const response = await fetch(`${apiUrl}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name,
-          email, 
-          password,
-          phoneNumber: "",
-          age: "",
-          gender: "",
-          education: "",
-          dominant_hand: ""
+          email,
+          password
         }),
       });
 
@@ -102,7 +97,7 @@ export default function RegisterForm() {
       setLoading(false);
 
       // Redirect ke dashboard (user baru selalu 'user' role)
-      router.push("/homeanalisis");
+      router.push("/user/homeanalisis");
     } catch (err) {
       console.error("Register error:", err);
       setError("Terjadi kesalahan. Silakan coba lagi.");

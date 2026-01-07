@@ -46,7 +46,7 @@ export default function LoginForm() {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-      
+
       // Call backend API untuk login
       const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: "POST",
@@ -93,7 +93,7 @@ export default function LoginForm() {
       if (data.user?.role === 'admin') {
         router.push("/admin");  // Admin ke dashboard admin
       } else {
-        router.push("/homeanalisis");  // User ke analysis page
+        router.push("/user/homeanalisis");  // User ke analysis page
       }
     } catch (err) {
       console.error("Login error:", err);

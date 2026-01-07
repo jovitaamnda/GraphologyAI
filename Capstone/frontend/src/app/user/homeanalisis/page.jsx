@@ -5,7 +5,7 @@ import UploadFoto from "@/components/homeanalisis/UploadFoto";
 import HandwritingCanvas from "@/components/homeanalisis/HandwritingCanvas";
 import HasilAnalisis from "@/components/homeanalisis/HasilAnalisis";
 import { Upload, Sparkles, Check } from "lucide-react";
-import { Lightbulb, Sun, Ruler, Smartphone, Camera } from "lucide-react";
+import { Lightbulb, Sun, Ruler, Smartphone, Camera, Pencil } from "lucide-react";
 
 export default function HomeAnalisis() {
   const [step, setStep] = useState("upload");
@@ -43,9 +43,8 @@ export default function HomeAnalisis() {
               <div key={s.id} className="flex items-center flex-1">
                 <div className="relative flex flex-col items-center">
                   <div
-                    className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 ${
-                      isCompleted ? "bg-green-500 text-white" : isActive ? "bg-indigo-600 text-white shadow-lg scale-110" : "bg-gray-300 text-gray-600"
-                    }`}
+                    className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 ${isCompleted ? "bg-green-500 text-white" : isActive ? "bg-indigo-600 text-white shadow-lg scale-110" : "bg-gray-300 text-gray-600"
+                      }`}
                   >
                     {isCompleted ? <Check className="w-8 h-8" /> : <Icon className="w-8 h-8" />}
                   </div>
@@ -167,7 +166,7 @@ export default function HomeAnalisis() {
 
                 <ul className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
                   <li className="flex items-start gap-5 bg-purple-50 p-6 rounded-2xl">
-                    <PencilIcon className="w-10 h-10 text-purple-600 flex-shrink-0" />
+                    <Pencil className="w-10 h-10 text-purple-600 flex-shrink-0" />
                     <div>
                       <strong className="text-lg">Tulis dengan ukuran & tekanan bervariasi</strong>
                       <p className="text-gray-600 mt-1">Seperti menulis biasa di kertas</p>
