@@ -34,18 +34,18 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout();
-    router.push("/login");
+    router.push("/auth/login");
   };
 
   const handleScrollOrNavigate = (page) => {
     if (page === "home") {
       router.push("/");
     } else if (page === "handwriting") {
-      router.push("/handwriting-analysis");
+      router.push("/analysis");
     } else if (page === "about") {
-      router.push("/about");
+      router.push("/learn-more");
     } else if (page === "login") {
-      router.push("/login");
+      router.push("/auth/login");
     }
     setMobileOpen(false);
   };
@@ -64,7 +64,7 @@ export default function Navbar() {
           <button onClick={() => handleScrollOrNavigate("about")} className="hover:text-blue-700 transition">About</button>
 
           {!user ? (
-            <button onClick={() => router.push("/login")} className="bg-blue-800 text-white px-5 py-2 rounded-lg hover:bg-blue-900 transition">
+            <button onClick={() => router.push("/auth/login")} className="bg-blue-800 text-white px-5 py-2 rounded-lg hover:bg-blue-900 transition">
               Login/Register
             </button>
           ) : (
@@ -78,12 +78,18 @@ export default function Navbar() {
                   <div className="px-4 py-3 border-b">
                     <div className="font-semibold">{user.name || "User"}</div>
                     <div className="text-xs text-gray-500">{user.email}</div>
+                    <div className="text-xs text-gray-400 mt-1">Role: {user.role || "user"}</div>
                   </div>
+                  {user.role === "admin" && (
+                    <button onClick={() => router.push("/admin/admin")} className="block w-full px-4 py-2 text-left hover:bg-gray-100 font-semibold text-purple-600">
+                      📊 Admin Dashboard
+                    </button>
+                  )}
                   <button onClick={() => router.push("/profile")} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
-                    Profile
+                    👤 Profile
                   </button>
                   <button onClick={handleLogout} className="block w-full px-4 py-2 text-left text-red-500 hover:bg-gray-100">
-                    Logout
+                    🚪 Logout
                   </button>
                 </div>
               )}

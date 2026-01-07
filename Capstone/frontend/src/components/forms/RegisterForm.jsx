@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, AlertCircle } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function RegisterForm() {
+  const router = useRouter();
+  const { login } = useAuth();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,31 +18,108 @@ export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (password !== confirmPassword) {
-      alert("Password tidak cocok");
-      return;
+  const validateForm = () => {
+    if (!name.trim()) {
+      setError("Nama tidak boleh kosong");
+      return false;
     }
+    if (!email.trim()) {
+      setError("Email tidak boleh kosong");
+      return false;
+    }
+    if (!email.includes("@")) {
+      setError("Format email tidak valid");
+      return false;
+    }
+    if (!password) {
+      setError("Password tidak boleh kosong");
+      return false;
+    }
+    if (password.length < 6) {
+      setError("Password minimal 6 karakter");
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setError("Password tidak cocok");
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!validateForm()) return;
 
     setLoading(true);
 
-    // Simulasi loading UI - dalam produksi, connect ke API
-    setTimeout(() => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      
+      const response = await fetch(`${apiUrl}/api/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          name,
+          email, 
+          password,
+          phoneNumber: "",
+          age: "",
+          gender: "",
+          education: "",
+          dominant_hand: ""
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Registrasi gagal. Silakan coba lagi.");
+        setLoading(false);
+        return;
+      }
+
+      // Register berhasil - login otomatis
+      login({
+        id: data.user?.id,
+        email: data.user?.email,
+        name: data.user?.name,
+        role: data.user?.role,  // ← Include role
+        photo: data.user?.photo,
+        token: data.token,
+      });
+
+      // Store token
+      if (data.token) {
+        localStorage.setItem("authToken", data.token);
+      }
+
       setLoading(false);
-      alert("Register UI siap untuk diintegrasikan dengan backend");
-      // Reset form
-      setName("");
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
-    }, 1500);
+
+      // Redirect ke dashboard (user baru selalu 'user' role)
+      router.push("/homeanalisis");
+    } catch (err) {
+      console.error("Register error:", err);
+      setError("Terjadi kesalahan. Silakan coba lagi.");
+      setLoading(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" aria-live="polite">
+      {/* Error Message */}
+      {error && (
+        <div className="flex items-center gap-3 p-4 bg-red-100/20 border border-red-300 rounded-2xl text-red-400">
+          <AlertCircle size={20} className="flex-shrink-0" />
+          <span className="text-sm font-medium">{error}</span>
+        </div>
+      )}
+
       {/* Nama */}
       <div className="text-left">
         <label className="block text-gray-700 font-medium mb-2">Nama Lengkap</label>

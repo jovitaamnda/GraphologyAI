@@ -45,13 +45,15 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      
       // Call backend API untuk login
-      const response = await fetch("http://localhost:4000/auth/login", {
+      const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // untuk cookies
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
@@ -63,27 +65,39 @@ export default function LoginForm() {
         return;
       }
 
-      // Login berhasil - update context
+      // Login berhasil - update context dengan role
       login({
-        id: data.user?.id,
+        id: data.user?._id || data.user?.id,
         email: data.user?.email,
         name: data.user?.name,
+        role: data.user?.role || "user",  // Default role ke 'user' jika tidak ada
         photo: data.user?.photo,
         token: data.token,
       });
 
-      // Store token di localStorage
+      // Store token dan user data di localStorage
       if (data.token) {
         localStorage.setItem("authToken", data.token);
+        localStorage.setItem("userData", JSON.stringify({
+          id: data.user?._id || data.user?.id,
+          email: data.user?.email,
+          name: data.user?.name,
+          role: data.user?.role || "user",
+          photo: data.user?.photo,
+        }));
       }
 
       setLoading(false);
 
-      // Redirect ke dashboard/homeanalisis
-      router.push("/homeanalisis");
+      // ✅ Redirect berbeda berdasarkan role
+      if (data.user?.role === 'admin') {
+        router.push("/admin");  // Admin ke dashboard admin
+      } else {
+        router.push("/homeanalisis");  // User ke analysis page
+      }
     } catch (err) {
       console.error("Login error:", err);
-      setError("Terjadi kesalahan. Silakan coba lagi.");
+      setError(`Terjadi kesalahan: ${err.message || 'Silakan coba lagi.'}`);
       setLoading(false);
     }
   };
@@ -153,11 +167,6 @@ export default function LoginForm() {
         ) : (
           "Masuk"
         )}
-      </button>
-
-      {/* Submit */}
-      <button type="submit" disabled={loading} className={`w-full py-5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-2xl transition ${loading ? "opacity-70 cursor-not-allowed" : "hover:scale-[1.02]"}`}>
-        {loading ? "Memproses..." : "Masuk"}
       </button>
     </form>
   );

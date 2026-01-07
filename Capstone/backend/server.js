@@ -1,28 +1,50 @@
-// backend/server.js
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const mongoose = require("mongoose");
-const authRoutes = require("./routes/auth");
+const express = require('express');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const connectDB = require('./config/db');
+
+dotenv.config();
+
+connectDB();
 
 const app = express();
-const PORT = process.env.PORT || 4000;
 
-// Middleware
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
-app.use(bodyParser.json());
+// CORS Configuration - Allow frontend to communicate
+app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-// Routes
-app.use("/auth", authRoutes);
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-// MongoDB connection
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.log(err));
+// Create uploads directory if it doesn't exist
+const fs = require('fs');
+if (!fs.existsSync('./uploads')) {
+    fs.mkdirSync('./uploads');
+}
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Request Logger
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.originalUrl} [${req.headers['content-type']}]`);
+    next();
+});
+
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/analysis', require('./routes/analysis'));
+app.use('/api/tests', require('./routes/testRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+
+// Make uploads folder static
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
+
+app.get('/', (req, res) => {
+    res.send('Graphology AI API is running...');
+});
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
