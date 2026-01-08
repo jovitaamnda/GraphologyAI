@@ -75,7 +75,7 @@ export default function HeroSection({ id }) {
             <MulaiAnalisisButton />
 
             <button
-              onClick={() => router.push("/handwriting-analysis")}
+              onClick={() => router.push("/learn-more")}
               className="relative z-50 border-2 border-white/50 text-white font-semibold text-lg px-8 py-3 rounded-xl hover:bg-white/10 hover:border-white/70 backdrop-blur-md transition-all duration-300"
             >
               Pelajari Lebih Lanjut

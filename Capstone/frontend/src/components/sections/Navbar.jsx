@@ -41,9 +41,9 @@ export default function Navbar() {
     if (page === "home") {
       router.push("/");
     } else if (page === "handwriting") {
-      router.push("/analysis");
+      router.push("/user/homeanalisis");
     } else if (page === "about") {
-      router.push("/learn-more");
+      router.push("/about");
     } else if (page === "login") {
       router.push("/auth/login");
     }

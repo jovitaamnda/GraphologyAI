@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { authApi } from "@/api";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -57,47 +58,50 @@ export default function RegisterForm() {
     setLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
-      const response = await fetch(`${apiUrl}/api/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          password
-        }),
+      const data = await authApi.register({
+        name,
+        email,
+        password
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Registrasi gagal. Silakan coba lagi.");
-        setLoading(false);
-        return;
-      }
 
       // Register berhasil - login otomatis
-      login({
-        id: data.user?.id,
-        email: data.user?.email,
-        name: data.user?.name,
-        role: data.user?.role,  // ← Include role
-        photo: data.user?.photo,
-        token: data.token,
-      });
-
-      // Store token
+      // 1. Simpan Token
       if (data.token) {
         localStorage.setItem("authToken", data.token);
+
+        // 2. Fetch Full Profile
+        try {
+          const userProfile = await authApi.getProfile();
+          const userDataToSave = {
+            id: userProfile._id || userProfile.id,
+            email: userProfile.email,
+            name: userProfile.name,
+            role: userProfile.role || "user",
+            photo: userProfile.photo,
+          };
+
+          // 3. Simpan ke Context & Storage
+          login({ ...userDataToSave, token: data.token });
+          localStorage.setItem("userData", JSON.stringify(userDataToSave));
+
+        } catch (profileError) {
+          console.error("Failed to fetch profile after register:", profileError);
+          // Fallback ke data register standard jika fetch gagal
+          login({
+            id: data._id || data.id,
+            email: data.email,
+            name: data.name,
+            role: data.role || "user",
+            photo: data.photo,
+            token: data.token,
+          });
+        }
       }
 
       setLoading(false);
 
-      // Redirect ke dashboard (user baru selalu 'user' role)
-      router.push("/user/homeanalisis");
+      // Redirect ke home page
+      router.push("/");
     } catch (err) {
       console.error("Register error:", err);
       setError("Terjadi kesalahan. Silakan coba lagi.");

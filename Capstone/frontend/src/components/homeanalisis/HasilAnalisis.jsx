@@ -1,46 +1,50 @@
 "use client";
 
-export default function HasilAnalisis({ image }) {
-  // Mock data untuk hasil analisis
-  const mockAnalysis = {
-    personality: "Analitis dan Detail-Oriented",
-    traits: [
-      { label: "Kesungguhan", value: 85 },
-      { label: "Perhatian pada Detail", value: 90 },
-      { label: "Kestabilan Emosi", value: 78 },
-      { label: "Kreativitas", value: 72 },
-      { label: "Kepemimpinan", value: 68 },
-    ],
-    description:
-      "Berdasarkan analisis tulisan tangan Anda, Anda menunjukkan karakteristik seorang individu yang fokus, reflektif, dan memiliki perhatian tinggi terhadap detail. Gaya tulisan Anda mencerminkan kedisiplinan dan konsistensi dalam pendekatan terhadap tugas-tugas.",
+export default function HasilAnalisis({ analysis }) {
+  if (!analysis) return null;
+
+  // Transform backend data format to UI format if needed
+  // Backend returns: { personalityType: "...", traits: {...}, description: "..." }
+
+  // Convert traits object to array for UI
+  const traitsList = analysis.traits ? Object.entries(analysis.traits).map(([key, value]) => ({
+    label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
+    value: value
+  })) : [];
+
+  const displayData = {
+    personality: analysis.personalityType || "Unknown Type",
+    traits: traitsList,
+    description: analysis.description || "No description available.",
+    image: analysis.imageUrl || analysis.canvasData,
     recommendations: [
-      "Manfaatkan kekuatan analitis Anda dalam pekerjaan yang memerlukan presisi",
-      "Kembangkan fleksibilitas dalam menghadapi situasi yang tidak terduga",
-      "Terus ajarkan diri untuk melihat gambaran besar, bukan hanya detail",
-    ],
+      "Manfaatkan kekuatan unique Anda",
+      "Terus kembangkan potensi diri",
+      "Jaga keseimbangan emosi dan logika"
+    ] // Backend can send this too later
   };
 
   return (
     <div className="space-y-8">
       {/* Image Preview */}
-      {image && (
+      {displayData.image && (
         <div className="bg-white shadow-lg rounded-2xl p-8 text-center">
           <h3 className="text-lg font-semibold text-gray-700 mb-4">Tulisan Tangan Anda</h3>
-          <img src={image} alt="Tulisan tangan" className="mx-auto rounded-md shadow-md max-h-64 object-contain" />
+          <img src={displayData.image} alt="Tulisan tangan" className="mx-auto rounded-md shadow-md max-h-64 object-contain" />
         </div>
       )}
 
       {/* Personality Result */}
       <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg rounded-2xl p-8">
         <h2 className="text-3xl font-bold mb-2">Hasil Analisis AI</h2>
-        <p className="text-xl opacity-90">{mockAnalysis.personality}</p>
+        <p className="text-xl opacity-90">{displayData.personality}</p>
       </div>
 
       {/* Traits Visualization */}
       <div className="bg-white shadow-lg rounded-2xl p-8">
         <h3 className="text-2xl font-semibold text-gray-800 mb-6">Profil Kepribadian</h3>
         <div className="space-y-5">
-          {mockAnalysis.traits.map((trait, idx) => (
+          {displayData.traits.map((trait, idx) => (
             <div key={idx}>
               <div className="flex justify-between mb-2">
                 <span className="font-medium text-gray-700">{trait.label}</span>
@@ -57,14 +61,14 @@ export default function HasilAnalisis({ image }) {
       {/* Description */}
       <div className="bg-indigo-50 border-l-4 border-indigo-600 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-indigo-900 mb-3">Interpretasi Hasil</h3>
-        <p className="text-gray-700 leading-relaxed">{mockAnalysis.description}</p>
+        <p className="text-gray-700 leading-relaxed">{displayData.description}</p>
       </div>
 
       {/* Recommendations */}
       <div className="bg-white shadow-lg rounded-2xl p-8">
         <h3 className="text-2xl font-semibold text-gray-800 mb-6">Rekomendasi Pengembangan Diri</h3>
         <ul className="space-y-4">
-          {mockAnalysis.recommendations.map((rec, idx) => (
+          {displayData.recommendations.map((rec, idx) => (
             <li key={idx} className="flex items-start gap-4 p-4 bg-purple-50 rounded-lg">
               <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">{idx + 1}</div>
               <p className="text-gray-700 pt-1">{rec}</p>

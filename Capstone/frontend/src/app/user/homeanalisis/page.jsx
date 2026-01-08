@@ -6,10 +6,13 @@ import HandwritingCanvas from "@/components/homeanalisis/HandwritingCanvas";
 import HasilAnalisis from "@/components/homeanalisis/HasilAnalisis";
 import { Upload, Sparkles, Check } from "lucide-react";
 import { Lightbulb, Sun, Ruler, Smartphone, Camera, Pencil } from "lucide-react";
+import { analysisApi } from "@/api";
 
 export default function HomeAnalisis() {
   const [step, setStep] = useState("upload");
-  const [uploadedImage, setUploadedImage] = useState(null);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const steps = [
     { id: "upload", name: "Upload Tulisan", icon: Upload },
@@ -18,9 +21,52 @@ export default function HomeAnalisis() {
 
   const currentStepIndex = steps.findIndex((s) => s.id === step);
 
-  const handleUploadComplete = (imageData) => {
-    setUploadedImage(imageData);
-    setStep("hasil");
+  const handleUploadComplete = async (imageData) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Get user data from localStorage
+      // Get user data from localStorage
+      const userDataString = localStorage.getItem("userData");
+      console.log("RAW LOCALSTORAGE userData:", userDataString); // DEBUG
+
+      const userData = JSON.parse(userDataString);
+      console.log("PARSED userData:", userData); // DEBUG
+
+      if (!userData) {
+        throw new Error("User data is empty. Please login again.");
+      }
+
+      const userId = userData.id || userData._id || (userData.user && (userData.user.id || userData.user._id));
+
+      console.log("--------------- DEBUG SESSION ----------------");
+      console.log("Full userData Object:", userData);
+      console.log("Keys available:", Object.keys(userData));
+      if (userData.user) console.log("Keys inside user:", Object.keys(userData.user));
+      console.log("Detected UserID:", userId);
+      console.log("----------------------------------------------");
+
+      if (!userId) {
+        // CORRUPT DATA DETECTED! FORCE RESET!
+        console.error("Corrupt user data detected. Clearing session.");
+        localStorage.removeItem("userData");
+        localStorage.removeItem("authToken");
+        alert("Session anda tidak valid (Data rusak). Anda akan diarahkan ke halaman login.");
+        window.location.href = "/auth/login"; // Force reload & redirect
+        return;
+      }
+
+      // Call API
+      const data = await analysisApi.uploadImage(userData.id, imageData);
+      setAnalysisResult(data.analysis);
+      setStep("hasil");
+    } catch (err) {
+      console.error("Analysis Error:", err);
+      setError(err.message);
+      alert(`Gagal memproses analisis: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -201,7 +247,7 @@ export default function HomeAnalisis() {
           {step === "hasil" && (
             <div className="animate-fadeIn">
               <h2 className="text-3xl font-bold text-center mb-10 text-indigo-700">Hasil Analisis Lengkap</h2>
-              <HasilAnalisis image={uploadedImage} />
+              <HasilAnalisis analysis={analysisResult} />
             </div>
           )}
         </div>

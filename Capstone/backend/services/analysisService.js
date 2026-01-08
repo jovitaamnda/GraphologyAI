@@ -109,6 +109,8 @@ class AnalysisService {
     return personalities[Math.floor(Math.random() * personalities.length)];
   }
 
+  // Helper removed (getMockAnalysisResult)
+
   // Get analysis history untuk user
   static async getUserAnalysisHistory(userId, page = 1, limit = 10) {
     try {
