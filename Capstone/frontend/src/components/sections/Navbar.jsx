@@ -51,44 +51,60 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-white shadow-sm" suppressHydrationWarning>
+    <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md shadow-md transition-all duration-300" suppressHydrationWarning>
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center" suppressHydrationWarning>
-        <div onClick={() => handleScrollOrNavigate("home")} className="text-2xl font-bold text-[#1e3a8a] cursor-pointer">
-          Grapholyze
+        <div onClick={() => handleScrollOrNavigate("home")} className="cursor-pointer hover:opacity-80 transition-opacity">
+          <Image
+            src="/grapholyze_logo.png"
+            alt="Grapholyze Capstone Logo"
+            width={240}
+            height={60}
+            className="w-auto h-14 object-contain"
+            priority
+          />
         </div>
 
         {/* Desktop */}
         <div className="hidden md:flex items-center gap-8">
-          <button onClick={() => handleScrollOrNavigate("home")} className="hover:text-blue-700 transition">Home</button>
-          <button onClick={() => handleScrollOrNavigate("handwriting")} className="hover:text-blue-700 transition">Handwriting Analyst</button>
-          <button onClick={() => handleScrollOrNavigate("about")} className="hover:text-blue-700 transition">About</button>
+          <button onClick={() => handleScrollOrNavigate("home")} className="text-gray-700 font-medium hover:text-[#1e3a8a] transition-colors relative group">
+            Home
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#1e3a8a] transition-all group-hover:w-full"></span>
+          </button>
+          <button onClick={() => handleScrollOrNavigate("handwriting")} className="text-gray-700 font-medium hover:text-[#1e3a8a] transition-colors relative group">
+            Handwriting Analyst
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#1e3a8a] transition-all group-hover:w-full"></span>
+          </button>
+          <button onClick={() => handleScrollOrNavigate("about")} className="text-gray-700 font-medium hover:text-[#1e3a8a] transition-colors relative group">
+            About
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#1e3a8a] transition-all group-hover:w-full"></span>
+          </button>
 
           {!user ? (
-            <button onClick={() => router.push("/auth/login")} className="bg-blue-800 text-white px-5 py-2 rounded-lg hover:bg-blue-900 transition">
+            <button onClick={() => router.push("/auth/login")} className="bg-[#1e3a8a] text-white px-6 py-2.5 rounded-full font-medium hover:bg-blue-900 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
               Login/Register
             </button>
           ) : (
             <div ref={profileRef} className="relative">
-              <button onClick={() => setProfileOpen((v) => !v)} className="w-10 h-10 rounded-full overflow-hidden border">
+              <button onClick={() => setProfileOpen((v) => !v)} className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 hover:border-[#1e3a8a] transition-colors">
                 <Image src={imgSrc} alt="avatar" width={40} height={40} />
               </button>
 
               {profileOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white shadow-lg rounded-lg">
-                  <div className="px-4 py-3 border-b">
-                    <div className="font-semibold">{user.name || "User"}</div>
+                <div className="absolute right-0 mt-2 w-56 bg-white shadow-xl rounded-xl border border-gray-100 overflow-hidden animate-fade-in-down">
+                  <div className="px-4 py-3 border-b bg-gray-50/50">
+                    <div className="font-semibold text-gray-800">{user.name || "User"}</div>
                     <div className="text-xs text-gray-500">{user.email}</div>
-                    <div className="text-xs text-gray-400 mt-1">Role: {user.role || "user"}</div>
+                    <div className="text-xs text-[#1e3a8a] mt-1 font-medium bg-blue-50 inline-block px-1.5 py-0.5 rounded">Role: {user.role || "user"}</div>
                   </div>
                   {user.role === "admin" && (
-                    <button onClick={() => router.push("/admin/admin")} className="block w-full px-4 py-2 text-left hover:bg-gray-100 font-semibold text-purple-600">
+                    <button onClick={() => router.push("/admin/admin")} className="block w-full px-4 py-2 text-left hover:bg-gray-50 font-medium text-purple-600 transition-colors">
                       📊 Admin Dashboard
                     </button>
                   )}
-                  <button onClick={() => router.push("/profile")} className="block w-full px-4 py-2 text-left hover:bg-gray-100">
+                  <button onClick={() => router.push("/profile")} className="block w-full px-4 py-2 text-left hover:bg-gray-50 text-gray-700 transition-colors">
                     👤 Profile
                   </button>
-                  <button onClick={handleLogout} className="block w-full px-4 py-2 text-left text-red-500 hover:bg-gray-100">
+                  <button onClick={handleLogout} className="block w-full px-4 py-2 text-left text-red-500 hover:bg-red-50 transition-colors">
                     🚪 Logout
                   </button>
                 </div>
