@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, updateUser } = useAuth();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -22,6 +22,7 @@ export default function ProfilePage() {
     confirmPassword: "",
   });
   const [profileImage, setProfileImage] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null); // RAW FILE FOR UPLOAD
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -54,6 +55,15 @@ export default function ProfilePage() {
           email: profileData.email || "",
           phoneNumber: profileData.phoneNumber || "",
         });
+
+        // Set initial profile image if exists
+        if (profileData.profilePicture) {
+          // Check if full URL or relative
+          const imageUrl = profileData.profilePicture.startsWith('http')
+            ? profileData.profilePicture
+            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${profileData.profilePicture}`;
+          setProfileImage(imageUrl);
+        }
 
         // Fetch analysis history
         try {
@@ -94,9 +104,10 @@ export default function ProfilePage() {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setSelectedFile(file); // SAVE RAW FILE
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfileImage(reader.result);
+        setProfileImage(reader.result); // PREVIEW
       };
       reader.readAsDataURL(file);
     }
@@ -105,11 +116,35 @@ export default function ProfilePage() {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     try {
-      await authApi.updateProfile(formData);
+      const dataToSubmit = new FormData();
+      dataToSubmit.append('name', formData.name);
+      dataToSubmit.append('email', formData.email);
+      dataToSubmit.append('phoneNumber', formData.phoneNumber);
+
+      if (selectedFile) {
+        dataToSubmit.append('profilePicture', selectedFile);
+      }
+
+      await authApi.updateProfile(dataToSubmit);
 
       setSuccessMessage("Profile updated successfully!");
       setIsEditing(false);
       setTimeout(() => setSuccessMessage(""), 3000);
+
+      // Refresh to ensure everything is synced
+      const freshProfile = await authApi.getProfile();
+
+      // Update AuthContext so Navbar updates immediately
+      if (updateUser) {
+        updateUser({ ...user, ...freshProfile });
+      }
+
+      if (freshProfile.profilePicture) {
+        const imageUrl = freshProfile.profilePicture.startsWith('http')
+          ? freshProfile.profilePicture
+          : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${freshProfile.profilePicture}`;
+        setProfileImage(imageUrl);
+      }
 
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -160,7 +195,7 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-12 px-4" suppressHydrationWarning>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 pt-28 pb-12 px-4" suppressHydrationWarning>
       <div className="max-w-4xl mx-auto" suppressHydrationWarning>
         {/* Header */}
         <motion.div

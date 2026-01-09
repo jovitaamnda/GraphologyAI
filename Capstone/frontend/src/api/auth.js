@@ -15,7 +15,9 @@ export const authApi = {
     },
 
     updateProfile: async (data) => {
-        return client.put("/api/auth/profile", data);
+        // If data is FormData, let axios handle the Content-Type (multipart/form-data)
+        const headers = data instanceof FormData ? { "Content-Type": "multipart/form-data" } : {};
+        return client.put("/api/auth/profile", data, { headers });
     },
 
     changePassword: async (currentPassword, newPassword) => {

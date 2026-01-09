@@ -17,8 +17,14 @@ export default function Navbar() {
 
   // update avatar
   useEffect(() => {
-    if (user?.photo) setImgSrc(user.photo);
-    else setImgSrc("/profile.jpeg");
+    if (user?.profilePicture) {
+      const imageUrl = user.profilePicture.startsWith('http')
+        ? user.profilePicture
+        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${user.profilePicture}`;
+      setImgSrc(imageUrl);
+    } else {
+      setImgSrc("/profile.jpeg");
+    }
   }, [user]);
 
   // close dropdown
@@ -86,7 +92,7 @@ export default function Navbar() {
           ) : (
             <div ref={profileRef} className="relative">
               <button onClick={() => setProfileOpen((v) => !v)} className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 hover:border-[#1e3a8a] transition-colors">
-                <Image src={imgSrc} alt="avatar" width={40} height={40} />
+                <img src={imgSrc} alt="avatar" className="w-full h-full object-cover" />
               </button>
 
               {profileOpen && (

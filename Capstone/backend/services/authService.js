@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 
 // Helper: Generate JWT
@@ -78,6 +78,10 @@ const authService = {
             user.name = updateData.name || user.name;
             user.email = updateData.email || user.email;
             user.phoneNumber = updateData.phoneNumber || user.phoneNumber;
+            if (updateData.profilePicture) {
+                user.profilePicture = updateData.profilePicture;
+            }
+
 
             if (updateData.password) {
                 user.password = updateData.password;
@@ -96,6 +100,7 @@ const authService = {
                 phoneNumber: updatedUser.phoneNumber,
                 role: updatedUser.role,
                 profile: updatedUser.profile,
+                profilePicture: updatedUser.profilePicture,
                 token: generateToken(updatedUser._id),
             };
         } else {

@@ -51,7 +51,14 @@ const getMe = async (req, res) => {
 // @access  Private
 const updateUserProfile = async (req, res) => {
     try {
-        const result = await authService.updateProfile(req.user._id, req.body);
+        const updateData = { ...req.body };
+
+        // If file uploaded, add to updateData
+        if (req.file) {
+            updateData.profilePicture = `/uploads/profiles/${req.file.filename}`;
+        }
+
+        const result = await authService.updateProfile(req.user._id, updateData);
         res.json(result);
     } catch (error) {
         res.status(404).json({ message: error.message });
@@ -64,7 +71,7 @@ const updateUserProfile = async (req, res) => {
 const changePassword = async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
-        
+
         if (!currentPassword || !newPassword) {
             return res.status(400).json({ message: 'Please provide current and new password' });
         }
