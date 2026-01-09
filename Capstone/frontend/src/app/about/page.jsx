@@ -3,7 +3,15 @@
 import Image from "next/image";
 import { Brain, Cpu, Code2, Network } from "lucide-react";
 
+import { useRouter } from "next/navigation";
+
 export default function AboutPage() {
+  const router = useRouter();
+
+  const handleStartAnalysis = () => {
+    router.push("/user/homeanalisis");
+  };
+
   const team = [
     { name: "Rhena Tabella", role: "Rekayasa Perangkat Lunak", img: "/team/rhena.jpeg" },
     { name: "Jovita Amanda", role: "Rekayasa Perangkat Lunak", img: "/team/jovita.jpeg" },
@@ -116,7 +124,7 @@ export default function AboutPage() {
       <section className="bg-gradient-to-r from-indigo-50 to-purple-50 py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl font-bold text-indigo-900 mb-12 text-center">Visi & Misi</h2>
-          
+
           <div className="grid md:grid-cols-2 gap-12">
             {/* Visi */}
             <div className="bg-white rounded-2xl p-8 shadow-md">
@@ -143,7 +151,10 @@ export default function AboutPage() {
       <section className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white py-20 px-6 text-center">
         <h2 className="text-3xl font-bold mb-4">Bergabunglah dengan Ribuan Pengguna Lainnya</h2>
         <p className="text-lg opacity-90 mb-8">Temukan insight mendalam tentang kepribadian Anda melalui analisis tulisan tangan dengan teknologi AI</p>
-        <button className="bg-yellow-400 text-gray-900 font-semibold px-8 py-3 rounded-xl hover:bg-yellow-500 transition-all duration-300 shadow-lg">
+        <button
+          onClick={() => router.push("/user/homeanalisis")}
+          className="bg-yellow-400 text-gray-900 font-semibold px-8 py-3 rounded-xl hover:bg-yellow-500 transition-all duration-300 shadow-lg"
+        >
           Mulai Analisis Sekarang
         </button>
       </section>

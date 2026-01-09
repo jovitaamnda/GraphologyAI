@@ -11,7 +11,7 @@ export default function MulaiAnalisisButton() {
     if (!user) {
       router.push("/login");
     } else {
-      router.push("/analysis"); // Updated to new analysis page
+      router.push("/user/homeanalisis"); // Updated to new analysis page
     }
   };
 

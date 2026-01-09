@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import UploadFoto from "@/components/homeanalisis/UploadFoto";
 import HandwritingCanvas from "@/components/homeanalisis/HandwritingCanvas";
 import HasilAnalisis from "@/components/homeanalisis/HasilAnalisis";
+import LoginRequiredModal from "@/components/modals/LoginRequiredModal";
 import { Upload, Sparkles, Check } from "lucide-react";
 import { Lightbulb, Sun, Ruler, Smartphone, Camera, Pencil } from "lucide-react";
 import { analysisApi } from "@/api";
 
 export default function HomeAnalisis() {
+  const router = useRouter();
   const [step, setStep] = useState("upload");
   const [analysisResult, setAnalysisResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const steps = [
     { id: "upload", name: "Upload Tulisan", icon: Upload },
@@ -30,11 +34,13 @@ export default function HomeAnalisis() {
       const userDataString = localStorage.getItem("userData");
       console.log("RAW LOCALSTORAGE userData:", userDataString); // DEBUG
 
-      const userData = JSON.parse(userDataString);
+      const userData = userDataString ? JSON.parse(userDataString) : null;
       console.log("PARSED userData:", userData); // DEBUG
 
       if (!userData) {
-        throw new Error("User data is empty. Please login again.");
+        setIsLoading(false);
+        setShowLoginModal(true);
+        return;
       }
 
       const userId = userData.id || userData._id || (userData.user && (userData.user.id || userData.user._id));
@@ -51,8 +57,8 @@ export default function HomeAnalisis() {
         console.error("Corrupt user data detected. Clearing session.");
         localStorage.removeItem("userData");
         localStorage.removeItem("authToken");
-        alert("Session anda tidak valid (Data rusak). Anda akan diarahkan ke halaman login.");
-        window.location.href = "/auth/login"; // Force reload & redirect
+        setIsLoading(false);
+        setShowLoginModal(true);
         return;
       }
 
@@ -63,7 +69,7 @@ export default function HomeAnalisis() {
     } catch (err) {
       console.error("Analysis Error:", err);
       setError(err.message);
-      alert(`Gagal memproses analisis: ${err.message}`);
+      // alert(`Gagal memproses analisis: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -268,6 +274,12 @@ export default function HomeAnalisis() {
           animation: fadeIn 0.6s ease-out;
         }
       `}</style>
+
+      {/* Login Modal */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
     </div>
   );
 }

@@ -135,7 +135,7 @@ export default function ProfilePage() {
       setIsChangingPassword(false);
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
-      console.error("Error changing password:", error);
+      // Validasi error (misal password salah) cukup tampilkan notifikasi, jangan console.error agar tidak dianggap system crash
       setErrorMessage(error.message || "Error changing password");
       setTimeout(() => setErrorMessage(""), 3000);
     }
@@ -160,8 +160,8 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-12 px-4" suppressHydrationWarning>
+      <div className="max-w-4xl mx-auto" suppressHydrationWarning>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
