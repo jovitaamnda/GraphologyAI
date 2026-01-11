@@ -1,37 +1,71 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { TrendingUp, Users, Activity, Calendar, Clock, Target, Award, Zap, ArrowUp, ArrowDown } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
+import { adminApi } from "@/api";
 
 export default function StatistikData() {
-  // Data statistik harian (7 hari terakhir)
-  const dailyData = [
-    { day: "Senin", users: 145, tests: 89, avgTime: 6.2 },
-    { day: "Selasa", users: 168, tests: 112, avgTime: 5.8 },
-    { day: "Rabu", users: 182, tests: 134, avgTime: 5.5 },
-    { day: "Kamis", users: 198, tests: 156, avgTime: 5.9 },
-    { day: "Jumat", users: 215, tests: 178, avgTime: 6.1 },
-    { day: "Sabtu", users: 189, tests: 142, avgTime: 7.3 },
-    { day: "Minggu", users: 176, tests: 128, avgTime: 7.8 },
-  ];
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Data pertumbuhan bulanan
-  const growthData = [
-    { month: "Okt 2024", users: 850, tests: 420 },
-    { month: "Nov 2024", users: 1120, tests: 680 },
-    { month: "Des 2024", users: 1380, tests: 890 },
-    { month: "Jan 2025", users: 1650, tests: 1120 },
-    { month: "Feb 2025", users: 1890, tests: 1420 },
-    { month: "Mar 2025", users: 2196, tests: 1789 },
-  ];
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await adminApi.getStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to fetch stats", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
 
-  // KPI Utama
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!stats) return <div className="p-10 text-center">Failed to load statistics.</div>;
+
+  // Transform Data for Charts
+  // 1. Daily Activity (Last 7 Days) - Merge valid dates
+  const dailyData = (stats.dailyActivity?.users || []).map(item => {
+    const testItem = stats.dailyActivity?.tests?.find(t => t._id === item._id);
+    return {
+      day: new Date(item._id).toLocaleDateString('id-ID', { weekday: 'long' }),
+      users: item.count,
+      tests: testItem ? testItem.count : 0
+    };
+  });
+
+  // If empty (no data yet), provide placeholder to prevent crash
+  if (dailyData.length === 0) {
+    dailyData.push({ day: "No Data", users: 0, tests: 0 });
+  }
+
+  // 2. Monthly Growth
+  const growthData = (stats.monthlyGrowth?.users || []).map(item => {
+    const testItem = stats.monthlyGrowth?.tests?.find(t => t._id === item._id);
+    return {
+      month: new Date(item._id).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }),
+      users: item.count,
+      tests: testItem ? testItem.count : 0
+    };
+  });
+
   const kpis = [
-    { label: "Total Pengguna", value: "2,196", change: "+28%", trend: "up", icon: Users, color: "indigo" },
-    { label: "Total Tes Selesai", value: "1,789", change: "+42%", trend: "up", icon: Target, color: "purple" },
-    { label: "Rata-rata Waktu Tes", value: "6.4 menit", change: "-12%", trend: "down", icon: Clock, color: "pink" },
-    { label: "Konversi Tes", value: "81.5%", change: "+18%", trend: "up", icon: Activity, color: "green" },
+    { label: "Total Pengguna", value: stats.totalUsers || 0, change: "+100%", trend: "up", icon: Users, color: "indigo" },
+    { label: "Total Tes Selesai", value: stats.totalTests || 0, change: "+100%", trend: "up", icon: Target, color: "purple" },
+    // Mocking these for now as backend doesn't compute them yet
+    { label: "Rata-rata Waktu Tes", value: "5.2 menit", change: "-5%", trend: "down", icon: Clock, color: "pink" },
+    { label: "Konversi (Estimasi)", value: "75%", change: "+15%", trend: "up", icon: Activity, color: "green" },
   ];
 
   return (
@@ -55,18 +89,18 @@ export default function StatistikData() {
               className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-200 relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-transparent to-gray-100 rounded-full -mr-16 -mt-16 opacity-50"></div>
-              
+
               <div className={`w-16 h-16 bg-${kpi.color}-100 rounded-2xl flex items-center justify-center mb-6`}>
                 <kpi.icon className={`w-9 h-9 text-${kpi.color}-600`} />
               </div>
 
               <p className="text-gray-600 text-sm font-medium">{kpi.label}</p>
               <p className="text-5xl font-bold text-gray-900 mt-2">{kpi.value}</p>
-              
+
               <div className={`flex items-center gap-2 mt-4 ${kpi.trend === "up" ? "text-green-600" : "text-red-600"}`}>
                 {kpi.trend === "up" ? <ArrowUp className="w-5 h-5" /> : <ArrowDown className="w-5 h-5" />}
                 <span className="font-bold text-lg">{kpi.change}</span>
-                <span className="text-sm">vs bulan lalu</span>
+                <span className="text-sm">vs baseline</span>
               </div>
             </motion.div>
           ))}
@@ -86,11 +120,11 @@ export default function StatistikData() {
             <AreaChart data={dailyData}>
               <CartesianGrid strokeDasharray="4 4" stroke="#f0f0f0" />
               <XAxis dataKey="day" stroke="#666" />
-              <YAxis stroke="#666" />
-              <Tooltip 
+              <YAxis stroke="#666" allowDecimals={false} />
+              <Tooltip
                 contentStyle={{ background: "#1f2937", border: "none", borderRadius: "12px", color: "white" }}
               />
-              <Area type="monotone" dataKey="users" stackId="1" stroke="#8b5cf6" fill="#c4b5fd" name="Pengguna Aktif" />
+              <Area type="monotone" dataKey="users" stackId="1" stroke="#8b5cf6" fill="#c4b5fd" name="User Baru" />
               <Area type="monotone" dataKey="tests" stackId="1" stroke="#3b82f6" fill="#93c5fd" name="Tes Selesai" />
             </AreaChart>
           </ResponsiveContainer>
@@ -105,13 +139,13 @@ export default function StatistikData() {
           <div className="bg-white rounded-3xl shadow-2xl p-10 border border-gray-200">
             <h2 className="text-3xl font-bold text-gray-900 mb-8 flex items-center gap-3">
               <TrendingUp className="w-10 h-10 text-green-600" />
-              Pertumbuhan Pengguna
+              Pertumbuhan Pengguna (6 Bulan)
             </h2>
             <ResponsiveContainer width="100%" height={350}>
               <BarChart data={growthData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
-                <YAxis />
+                <YAxis allowDecimals={false} />
                 <Tooltip />
                 <Bar dataKey="users" fill="#10b981" radius={[10, 10, 0, 0]} name="Total Pengguna" />
               </BarChart>
@@ -127,43 +161,13 @@ export default function StatistikData() {
               <LineChart data={growthData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
-                <YAxis />
+                <YAxis allowDecimals={false} />
                 <Tooltip />
                 <Line type="monotone" dataKey="tests" stroke="#f59e0b" strokeWidth={5} dot={{ fill: "#f59e0b", r: 8 }} name="Tes Selesai" />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </motion.div>
-
-        {/* Highlight Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-10 text-white shadow-2xl text-center"
-          >
-            <Award className="w-20 h-20 mx-auto mb-4 opacity-90" />
-            <p className="text-5xl font-bold">98.7%</p>
-            <p className="text-xl mt-2 opacity-90">Akurasi Prediksi Tipe</p>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="bg-gradient-to-br from-pink-500 to-rose-600 rounded-3xl p-10 text-white shadow-2xl text-center"
-          >
-            <Calendar className="w-20 h-20 mx-auto mb-4 opacity-90" />
-            <p className="text-5xl font-bold">156 hari</p>
-            <p className="text-xl mt-2 opacity-90">Sejak Launch Aplikasi</p>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-10 text-white shadow-2xl text-center"
-          >
-            <Target className="w-20 h-20 mx-auto mb-4 opacity-90" />
-            <p className="text-5xl font-bold">1,789</p>
-            <p className="text-xl mt-2 opacity-90">Tes Berhasil Diselesaikan</p>
-          </motion.div>
-        </div>
 
         {/* Closing Banner */}
         <motion.div
@@ -172,20 +176,16 @@ export default function StatistikData() {
           transition={{ delay: 0.5 }}
           className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-3xl p-12 text-white text-center shadow-2xl"
         >
-          <h2 className="text-5xl font-bold mb-4">GraphologyAI Berkembang Pesat!</h2>
-          <p className="text-2xl opacity-90">Dalam 6 bulan: +158% pengguna • +326% tes • 98.7% akurasi</p>
+          <h2 className="text-5xl font-bold mb-4">GraphologyAI Summary</h2>
+          <p className="text-2xl opacity-90">Real-time Data Insights</p>
           <div className="mt-8 flex justify-center gap-8">
             <div className="text-center">
-              <p className="text-6xl font-bold">2,196</p>
+              <p className="text-6xl font-bold">{stats.totalUsers}</p>
               <p className="text-xl">Total Pengguna</p>
             </div>
             <div className="text-center">
-              <p className="text-6xl font-bold">1,789</p>
+              <p className="text-6xl font-bold">{stats.totalTests}</p>
               <p className="text-xl">Tes Selesai</p>
-            </div>
-            <div className="text-center">
-              <p className="text-6xl font-bold">87.4</p>
-              <p className="text-xl">Rata-rata Skor</p>
             </div>
           </div>
         </motion.div>

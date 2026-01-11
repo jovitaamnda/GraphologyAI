@@ -73,9 +73,14 @@ export default function LoginForm() {
           localStorage.setItem("userData", JSON.stringify(userDataToSave));
 
           // 4. Redirect
+          console.log("Redirecting based on role:", userProfile.role);
           if (userProfile.role === 'admin') {
+            // Set cookie for middleware
+            document.cookie = "admin_access=true; path=/";
+            console.log("Going to /admin");
             router.push("/admin");
           } else {
+            console.log("Going to /");
             router.push("/");
           }
         } catch (profileError) {

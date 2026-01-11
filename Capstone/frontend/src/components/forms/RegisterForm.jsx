@@ -14,6 +14,8 @@ export default function RegisterForm() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -32,6 +34,14 @@ export default function RegisterForm() {
     }
     if (!email.includes("@")) {
       setError("Format email tidak valid");
+      return false;
+    }
+    if (!age || age < 12) {
+      setError("Umur harus diisi (min 12 tahun)");
+      return false;
+    }
+    if (!gender) {
+      setError("Silakan pilih jenis kelamin");
       return false;
     }
     if (!password) {
@@ -61,15 +71,15 @@ export default function RegisterForm() {
       const data = await authApi.register({
         name,
         email,
-        password
+        password,
+        age: parseInt(age),
+        gender
       });
 
       // Register berhasil - login otomatis
-      // 1. Simpan Token
       if (data.token) {
         localStorage.setItem("authToken", data.token);
 
-        // 2. Fetch Full Profile
         try {
           const userProfile = await authApi.getProfile();
           const userDataToSave = {
@@ -77,34 +87,27 @@ export default function RegisterForm() {
             email: userProfile.email,
             name: userProfile.name,
             role: userProfile.role || "user",
-            photo: userProfile.photo,
+            photo: userProfile.profilePicture,
           };
 
-          // 3. Simpan ke Context & Storage
           login({ ...userDataToSave, token: data.token });
           localStorage.setItem("userData", JSON.stringify(userDataToSave));
 
         } catch (profileError) {
           console.error("Failed to fetch profile after register:", profileError);
-          // Fallback ke data register standard jika fetch gagal
+          // Fallback
           login({
-            id: data._id || data.id,
-            email: data.email,
-            name: data.name,
-            role: data.role || "user",
-            photo: data.photo,
             token: data.token,
+            ...data
           });
         }
       }
 
       setLoading(false);
-
-      // Redirect ke home page
       router.push("/");
     } catch (err) {
       console.error("Register error:", err);
-      setError("Terjadi kesalahan. Silakan coba lagi.");
+      setError(err.response?.data?.message || "Terjadi kesalahan. Silakan coba lagi.");
       setLoading(false);
     }
   };
@@ -134,6 +137,27 @@ export default function RegisterForm() {
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
           <Input type="email" placeholder="nama@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10 py-6 text-base" required />
+        </div>
+      </div>
+
+      {/* Age & Gender Row */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="text-left">
+          <label className="block text-gray-700 font-medium mb-2">Umur</label>
+          <Input type="number" placeholder="Contoh: 25" value={age} onChange={(e) => setAge(e.target.value)} className="py-6 text-base" min="12" required />
+        </div>
+        <div className="text-left">
+          <label className="block text-gray-700 font-medium mb-2">Gender</label>
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 h-[50px] bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            required
+          >
+            <option value="" disabled>Pilih...</option>
+            <option value="Laki-laki">Laki-laki</option>
+            <option value="Perempuan">Perempuan</option>
+          </select>
         </div>
       </div>
 

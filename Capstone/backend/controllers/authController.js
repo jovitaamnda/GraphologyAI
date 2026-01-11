@@ -32,9 +32,18 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
+
+        console.log('🔹 LOGIN ATTEMPT 🔹');
+        console.log('Email:', email);
+        console.log('Password Length:', password ? password.length : 'N/A');
+        // Do NOT log the actual password in production, but for local debugging it helps to verify if it matches 'admin123456'
+        // console.log('Password:', password); 
+
         const result = await authService.login(email, password);
+        console.log('✅ Login Success for:', email);
         res.json(result);
     } catch (error) {
+        console.error('❌ Login Failed:', error.message);
         res.status(400).json({ message: error.message });
     }
 };
@@ -52,6 +61,16 @@ const getMe = async (req, res) => {
 const updateUserProfile = async (req, res) => {
     try {
         const updateData = { ...req.body };
+
+        // Handle profile fields (because FormData sends them as flat keys)
+        if (req.body.age || req.body.gender || req.body.education || req.body.dominant_hand) {
+            updateData.profile = {
+                ...(req.body.age && { age: req.body.age }),
+                ...(req.body.gender && { gender: req.body.gender }),
+                ...(req.body.education && { education: req.body.education }),
+                ...(req.body.dominant_hand && { dominant_hand: req.body.dominant_hand }),
+            };
+        }
 
         // If file uploaded, add to updateData
         if (req.file) {

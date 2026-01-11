@@ -3,43 +3,50 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Download, FileText, Users, Calendar, Clock, CheckCircle } from "lucide-react";
-import { saveAs } from "file-saver";
+import { adminApi } from "@/api";
 
 export default function ExportData() {
   const [isExporting, setIsExporting] = useState(false);
+  const [totalUsers, setTotalUsers] = useState("...");
 
-  // Data dummy (nanti bisa diganti dari Firebase)
-  const users = [
-    { name: "Jovita Cantika", email: "jovita@gmail.com", type: 5, tests: 7, joinDate: "15 Mar 2025", status: "Aktif" },
-    { name: "Rhena Putri", email: "rhena@gmail.com", type: 2, tests: 4, joinDate: "14 Mar 2025", status: "Aktif" },
-    { name: "Aisyah Nur Fadilah", email: "aisyah.nur@gmail.com", type: 4, tests: 9, joinDate: "13 Mar 2025", status: "Aktif" },
-    { name: "Putri Ayu Lestari", email: "putri.ayu@gmail.com", type: 1, tests: 2, joinDate: "12 Mar 2025", status: "Nonaktif" },
-    { name: "Budi Santoso", email: "budi.santoso@gmail.com", type: 3, tests: 15, joinDate: "11 Mar 2025", status: "Aktif" },
-    // ... bisa tambah sampai 100 kalau mau
-  ];
+  // Fetch total count on mount just for display
+  useState(() => {
+    adminApi.getStats().then(data => setTotalUsers(data.totalUsers)).catch(err => console.error(err));
+  }, []);
 
-  const handleExport = () => {
-    setIsExporting(true);
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
 
-    // Buat CSV sederhana tapi cantik
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "No,Nama Lengkap,Email,Tipe Enneagram,Jumlah Tes,Tanggal Join,Status\n";
+      // Fetch ALL users (limit: 0)
+      const data = await adminApi.getUsers(1, 0, "");
+      const users = data.users || [];
 
-    users.forEach((user, index) => {
-      csvContent += `${index + 1},${user.name},${user.email},Tipe ${user.type},${user.tests},${user.joinDate},${user.status}\n`;
-    });
+      // Build CSV
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "No,Nama Lengkap,Email,Gender,Umur,Role,Tanggal Join\n";
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `GraphologyAI_Data_User_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      users.forEach((user, index) => {
+        const date = new Date(user.createdAt).toLocaleDateString('id-ID');
+        const age = user.profile?.age || "-";
+        const gender = user.profile?.gender || "-";
+        csvContent += `${index + 1},"${user.name}","${user.email}","${gender}","${age}",${user.role},${date}\n`;
+      });
 
-    setTimeout(() => {
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `GraphologyAI_All_Users_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+    } catch (error) {
+      console.error("Export failed", error);
+      alert("Gagal mengunduh data. Silakan coba lagi.");
+    } finally {
       setIsExporting(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -64,7 +71,7 @@ export default function ExportData() {
               <Download className="w-14 h-14" />
             </div>
             <h2 className="text-5xl font-bold mb-4">Siap Download Data?</h2>
-            <p className="text-xl opacity-90 mb-10">Total {users.length} pengguna siap diekspor dalam format Excel</p>
+            <p className="text-xl opacity-90 mb-10">Total {totalUsers} pengguna siap diekspor dalam format Excel</p>
 
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -89,7 +96,7 @@ export default function ExportData() {
             <div className="mt-10 grid grid-cols-3 gap-8 text-center">
               <div>
                 <Users className="w-12 h-12 mx-auto mb-2 opacity-80" />
-                <p className="text-4xl font-bold">{users.length}</p>
+                <p className="text-4xl font-bold">{totalUsers}</p>
                 <p className="text-lg opacity-90">Total Pengguna</p>
               </div>
               <div>
@@ -99,7 +106,7 @@ export default function ExportData() {
               </div>
               <div>
                 <Calendar className="w-12 h-12 mx-auto mb-2 opacity-80" />
-                <p className="text-4xl font-bold">2025</p>
+                <p className="text-4xl font-bold">{new Date().getFullYear()}</p>
                 <p className="text-lg opacity-90">Data Terbaru</p>
               </div>
             </div>
@@ -121,7 +128,7 @@ export default function ExportData() {
         {/* Riwayat Mini */}
         <div className="mt-10 text-center">
           <p className="text-gray-600">
-            <Clock className="inline w-5 h-5" /> Terakhir diekspor: <strong>19 Maret 2025, 15:30</strong>
+            <Clock className="inline w-5 h-5" /> Data Real-time dari Database
           </p>
         </div>
       </div>

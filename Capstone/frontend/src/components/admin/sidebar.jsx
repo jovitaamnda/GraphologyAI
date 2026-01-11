@@ -7,7 +7,6 @@ const menu = [
   { name: 'Data User', href: '/admin/data-user' },
   { name: 'Statistik Data', href: '/admin/statistik-data' },
   { name: 'Export Data', href: '/admin/export-data' },
-  { name: 'Settings', href: '/admin/settings' },
 ]
 
 export function Sidebar() {
@@ -23,11 +22,10 @@ export function Sidebar() {
           <Link
             key={item.href}
             href={item.href}
-            className={`block px-8 py-4 text-lg transition-all ${
-              pathname === item.href
-                ? 'bg-white text-[#2c3e50] font-bold'
-                : 'hover:bg-[#34495e]'
-            }`}
+            className={`block px-8 py-4 text-lg transition-all ${pathname === item.href
+              ? 'bg-white text-[#2c3e50] font-bold'
+              : 'hover:bg-[#34495e]'
+              }`}
           >
             {item.name}
           </Link>

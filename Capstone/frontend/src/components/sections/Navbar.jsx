@@ -56,6 +56,9 @@ export default function Navbar() {
     setMobileOpen(false);
   };
 
+  // Hide Navbar on Admin pages (admin has its own navbar)
+  if (pathname.startsWith("/admin")) return null;
+
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md shadow-md transition-all duration-300" suppressHydrationWarning>
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center" suppressHydrationWarning>
@@ -80,8 +83,8 @@ export default function Navbar() {
             Handwriting Analyst
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#1e3a8a] transition-all group-hover:w-full"></span>
           </button>
-          <button onClick={() => handleScrollOrNavigate("about")} className="text-gray-700 font-medium hover:text-[#1e3a8a] transition-colors relative group">
-            About
+          <button onClick={() => router.push("/learn-more")} className="text-gray-700 font-medium hover:text-[#1e3a8a] transition-colors relative group">
+            Learn More
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#1e3a8a] transition-all group-hover:w-full"></span>
           </button>
 
@@ -103,7 +106,7 @@ export default function Navbar() {
                     <div className="text-xs text-[#1e3a8a] mt-1 font-medium bg-blue-50 inline-block px-1.5 py-0.5 rounded">Role: {user.role || "user"}</div>
                   </div>
                   {user.role === "admin" && (
-                    <button onClick={() => router.push("/admin/admin")} className="block w-full px-4 py-2 text-left hover:bg-gray-50 font-medium text-purple-600 transition-colors">
+                    <button onClick={() => router.push("/admin")} className="block w-full px-4 py-2 text-left hover:bg-gray-50 font-medium text-purple-600 transition-colors">
                       📊 Admin Dashboard
                     </button>
                   )}
