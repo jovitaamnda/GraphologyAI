@@ -91,7 +91,7 @@ export default function LoginForm() {
         throw new Error("Login berhasil tetapi tidak menerima token.");
       }
     } catch (err) {
-      console.error("Login error:", err);
+      console.warn("Login attempt failed:", err); // Warn is better than Error to avoid "Issue" overlay
       setError(`Terjadi kesalahan: ${err.message || 'Silakan coba lagi.'}`);
       setLoading(false);
     }
