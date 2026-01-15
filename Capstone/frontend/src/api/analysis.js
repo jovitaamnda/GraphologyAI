@@ -1,12 +1,12 @@
 import client from "./client";
 
 export const analysisApi = {
-    uploadImage: async (userId, imageData) => {
-        return client.post("/api/analysis/upload", { userId, imageData });
+    uploadImage: async (imageData) => {
+        return client.post("/api/analysis/upload", { imageData });
     },
 
-    uploadCanvas: async (userId, canvasData) => {
-        return client.post("/api/analysis/canvas", { userId, canvasData });
+    uploadCanvas: async (canvasData) => {
+        return client.post("/api/analysis/canvas", { canvasData });
     },
 
     getHistory: async (userId, page = 1, limit = 10) => {
@@ -19,3 +19,4 @@ export const analysisApi = {
         return client.get(`/api/analysis/${analysisId}`);
     },
 };
+

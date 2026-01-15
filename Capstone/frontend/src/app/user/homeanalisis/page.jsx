@@ -29,47 +29,18 @@ export default function HomeAnalisis() {
     setIsLoading(true);
     setError(null);
     try {
-      // Get user data from localStorage
-      // Get user data from localStorage
-      const userDataString = localStorage.getItem("userData");
-      console.log("RAW LOCALSTORAGE userData:", userDataString); // DEBUG
-
-      const userData = userDataString ? JSON.parse(userDataString) : null;
-      console.log("PARSED userData:", userData); // DEBUG
-
-      if (!userData) {
-        setIsLoading(false);
-        setShowLoginModal(true);
-        return;
-      }
-
-      const userId = userData.id || userData._id || (userData.user && (userData.user.id || userData.user._id));
-
-      console.log("--------------- DEBUG SESSION ----------------");
-      console.log("Full userData Object:", userData);
-      console.log("Keys available:", Object.keys(userData));
-      if (userData.user) console.log("Keys inside user:", Object.keys(userData.user));
-      console.log("Detected UserID:", userId);
-      console.log("----------------------------------------------");
-
-      if (!userId) {
-        // CORRUPT DATA DETECTED! FORCE RESET!
-        console.error("Corrupt user data detected. Clearing session.");
-        localStorage.removeItem("userData");
-        localStorage.removeItem("authToken");
-        setIsLoading(false);
-        setShowLoginModal(true);
-        return;
-      }
-
-      // Call API
-      const data = await analysisApi.uploadImage(userData.id, imageData);
+      // Call API - userId will be extracted from JWT token by backend
+      const data = await analysisApi.uploadImage(imageData);
       setAnalysisResult(data.analysis);
       setStep("hasil");
     } catch (err) {
       console.error("Analysis Error:", err);
       setError(err.message);
-      // alert(`Gagal memproses analisis: ${err.message}`);
+
+      // Check if it's an authentication error
+      if (err.message.includes("authorized") || err.message.includes("token")) {
+        setShowLoginModal(true);
+      }
     } finally {
       setIsLoading(false);
     }

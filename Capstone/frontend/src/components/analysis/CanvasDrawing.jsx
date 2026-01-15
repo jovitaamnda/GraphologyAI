@@ -71,14 +71,22 @@ export default function CanvasDrawing({
       setLoading(true);
       const canvasData = canvasRef.current.toDataURL("image/png");
 
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Please login first");
+      }
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/analysis/canvas`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // Add token
+          },
           body: JSON.stringify({
-            userId,
-            canvasData,
+            canvasData, // userId removed, backend gets it from token
           }),
         }
       );
