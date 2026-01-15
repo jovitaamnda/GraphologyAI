@@ -1,4 +1,7 @@
-const AnalysisService = require("../services/analysisService");
+const analysisService = require("../services/analysisService");
+const PDFDocument = require("pdfkit");
+const fs = require("fs");
+const path = require("path");
 
 // @route   POST /api/analysis/upload
 // @desc    Upload dan analyze image
@@ -13,7 +16,7 @@ exports.uploadImage = async (req, res) => {
       return res.status(400).json({ message: "Image data required" });
     }
 
-    const analysis = await AnalysisService.analyzeHandwriting(
+    const analysis = await analysisService.analyzeHandwriting(
       userId,
       imageData,
       "image"
@@ -26,6 +29,86 @@ exports.uploadImage = async (req, res) => {
   } catch (error) {
     console.error("[Upload Error]", error);
     res.status(500).json({ message: error.message });
+  }
+};
+
+// @route   GET /api/analysis/:analysisId/pdf
+// @desc    Download Analysis PDF
+// @access  Private
+exports.generatePDF = async (req, res) => {
+  try {
+    const { analysisId } = req.params;
+    const analysis = await analysisService.getAnalysis(analysisId);
+
+    if (!analysis) {
+      return res.status(404).json({ message: "Analysis not found" });
+    }
+
+    // Create PDF
+    const doc = new PDFDocument();
+    const filename = `Analysis_Result_${analysisId}.pdf`;
+
+    res.setHeader("Content-disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-type", "application/pdf");
+
+    doc.pipe(res);
+
+    // --- PDF CONTENT ---
+
+    // Header
+    doc.fontSize(20).text("Hasil Analisis Grafologi AI", { align: "center" });
+    doc.moveDown();
+
+    // User Info
+    doc.fontSize(12).text(`Nama: ${analysis.userId.name}`);
+    doc.text(`Email: ${analysis.userId.email}`);
+    doc.text(`Tanggal: ${new Date(analysis.createdAt).toLocaleDateString()}`);
+    doc.moveDown();
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke(); // Separator line
+    doc.moveDown();
+
+    // Enneagram Type
+    doc.fontSize(16).fillColor("purple").text(`Tipe Kepribadian: ${analysis.enneagramType || 'Tidak Terdeteksi'}`, { align: "center" });
+    doc.fontSize(14).fillColor("black").text(`(${analysis.personalityType || 'Unknown'})`, { align: "center" });
+    doc.moveDown();
+
+    // Description
+    doc.fontSize(12).text("Deskripsi:", { underline: true });
+    doc.moveDown(0.5);
+    doc.text(analysis.description || "Tidak ada deskripsi.", { align: "justify" });
+    doc.moveDown();
+
+    // Traits (Simple Bar Chart Visualization)
+    if (analysis.traits) {
+      doc.fontSize(12).text("Profil Kepribadian:", { underline: true });
+      doc.moveDown(0.5);
+
+      const traits = analysis.traits; // Access sub-document directly
+      const traitKeys = Object.keys(traits).filter(k => typeof traits[k] === 'number');
+
+      traitKeys.forEach(trait => {
+        const value = traits[trait];
+        const label = trait.charAt(0).toUpperCase() + trait.slice(1).replace(/([A-Z])/g, ' $1');
+
+        doc.text(`${label}: ${value}%`);
+
+        // Draw bar
+        const barWidth = (value / 100) * 300;
+        doc.rect(doc.x, doc.y, barWidth, 10).fill("purple");
+        doc.moveDown(1.5);
+        doc.fillColor("black"); // Reset color
+      });
+    }
+
+    // Footer
+    doc.moveDown(2);
+    doc.fontSize(10).text("Graphology AI - Ungkap Kepribadian dari Tulisan Tangan", { align: "center", text: "grey" });
+
+    doc.end();
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Gagal membuat PDF" });
   }
 };
 
@@ -42,7 +125,7 @@ exports.analyzeCanvas = async (req, res) => {
       return res.status(400).json({ message: "Canvas data required" });
     }
 
-    const analysis = await AnalysisService.analyzeHandwriting(
+    const analysis = await analysisService.analyzeHandwriting(
       userId,
       canvasData,
       "canvas"
@@ -65,7 +148,7 @@ exports.getAnalysis = async (req, res) => {
   try {
     const { analysisId } = req.params;
 
-    const analysis = await AnalysisService.getAnalysis(analysisId);
+    const analysis = await analysisService.getAnalysis(analysisId);
 
     if (!analysis) {
       return res.status(404).json({ message: "Analysis not found" });

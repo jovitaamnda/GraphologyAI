@@ -11,8 +11,16 @@ const protect = async (req, res, next) => {
     ) {
         try {
             token = req.headers.authorization.split(' ')[1];
+            console.log("Token Received:", token); // DEBUG
+            // console.log("Using Secret:", process.env.JWT_SECRET); // DEBUG (Enable if needed, but risky to expose)
+
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            console.log("Decoded ID:", decoded.id); // DEBUG
+
             req.user = await User.findById(decoded.id).select('-password');
+            if (!req.user) {
+                throw new Error("User not found with this token id");
+            }
             next();
         } catch (error) {
             console.error(error);

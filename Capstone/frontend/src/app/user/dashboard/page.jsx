@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import client from "@/api/client";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -14,9 +14,9 @@ export default function DashboardPage() {
     if (!token) return router.push("/login");
 
     // Bisa fetch data user juga dari backend
-    axios
-      .get("http://localhost:5000/api/auth/me", { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => setUser(res.data))
+    client
+      .get("/api/auth/me") // Client handles URL and Auth Header automatically
+      .then((res) => setUser(res)) // Interceptor returns res.data directly
       .catch(() => router.push("/login"));
   }, []);
 

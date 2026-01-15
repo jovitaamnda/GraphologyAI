@@ -25,7 +25,7 @@ export default function Navbar() {
     if (user?.profilePicture) {
       const imageUrl = user.profilePicture.startsWith('http')
         ? user.profilePicture
-        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${user.profilePicture}`;
+        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${user.profilePicture}`;
       setImgSrc(imageUrl);
     } else {
       setImgSrc("/profile.jpeg");

@@ -52,7 +52,7 @@ export default function AdminNavbar() {
                                 user?.profilePicture
                                     ? (user.profilePicture.startsWith('http')
                                         ? user.profilePicture
-                                        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${user.profilePicture}`)
+                                        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${user.profilePicture}`)
                                     : "/profile.jpeg"
                             }
                             alt="Profile"

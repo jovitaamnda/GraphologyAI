@@ -133,6 +133,7 @@ class AnalysisService {
 
         // Update analysis with AI result
         analysis.personalityType = aiResult.personalityType;
+        analysis.enneagramType = aiResult.enneagramType; // <--- FIX: Save Enneagram Type
         analysis.traits = aiResult.traits;
         analysis.description = aiResult.description;
         analysis.status = "completed";
@@ -145,6 +146,7 @@ class AnalysisService {
         // Fallback to mock data if AI fails
         const mockResult = this.getMockAnalysisResult();
         analysis.personalityType = mockResult.personalityType;
+        analysis.enneagramType = mockResult.enneagramType || "Tipe X (Mock)";
         analysis.traits = mockResult.traits;
         analysis.description = mockResult.description;
         analysis.status = "completed";
@@ -228,13 +230,13 @@ class AnalysisService {
         console.warn(`[Flask AI] Unknown type: ${cleanType}, using fallback`);
         throw new Error(`Unknown personality type: ${cleanType}`);
       }
-      
+
       return {
         personalityType: mapping.personalityType,
         enneagramType: cleanType, // <--- Pastikan ini dikirim (Contoh: "Tipe 6")
         traits: mapping.traits,
         description: mapping.description
-};
+      };
 
     } catch (error) {
       if (error.code === 'ECONNREFUSED') {

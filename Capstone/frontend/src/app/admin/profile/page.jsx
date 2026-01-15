@@ -52,7 +52,7 @@ export default function AdminProfilePage() {
                 if (profileData.profilePicture) {
                     const imageUrl = profileData.profilePicture.startsWith('http')
                         ? profileData.profilePicture
-                        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${profileData.profilePicture}`;
+                        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${profileData.profilePicture}`;
                     setProfileImage(imageUrl);
                 }
                 setLoadingData(false);

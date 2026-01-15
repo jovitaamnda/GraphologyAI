@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import client from "@/api/client";
 
 export default function HasilAnalisis({ analysis }) {
   // Debugging untuk melihat struktur data di console browser
@@ -37,16 +38,37 @@ export default function HasilAnalisis({ analysis }) {
     ]
   };
 
+  // Function to download PDF
+  const handleDownloadPDF = async () => {
+    try {
+      const response = await client.get(`/api/analysis/${rawData._id}/pdf`, {
+        responseType: 'blob'
+      });
+
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Hasil_Analisis_${displayData.enneagram.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download failed:", error);
+      alert("Gagal mendownload PDF. Pastikan backend berjalan.");
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Image Preview */}
       {displayData.image && (
         <div className="bg-white shadow-lg rounded-2xl p-8 text-center">
           <h3 className="text-lg font-semibold text-gray-700 mb-4">Tulisan Tangan Anda</h3>
-          <img 
-            src={displayData.image} 
-            alt="Tulisan tangan" 
-            className="mx-auto rounded-md shadow-md max-h-64 object-contain" 
+          <img
+            src={displayData.image}
+            alt="Tulisan tangan"
+            className="mx-auto rounded-md shadow-md max-h-64 object-contain"
           />
         </div>
       )}
@@ -54,12 +76,12 @@ export default function HasilAnalisis({ analysis }) {
       {/* Personality Result Section */}
       <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg rounded-2xl p-8">
         <h2 className="text-3xl font-bold mb-2">Hasil Analisis AI</h2>
-        
+
         {/* Badge Tipe Enneagram */}
         <div className="mt-2 mb-4 inline-block bg-white text-indigo-600 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm">
           {displayData.enneagram}
         </div>
-        
+
         <p className="text-xl opacity-90">{displayData.personality}</p>
       </div>
 
@@ -75,8 +97,8 @@ export default function HasilAnalisis({ analysis }) {
                   <span className="text-indigo-600 font-semibold">{trait.value}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full transition-all duration-500" 
+                  <div
+                    className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full transition-all duration-500"
                     style={{ width: `${trait.value}%` }}
                   ></div>
                 </div>
@@ -109,14 +131,20 @@ export default function HasilAnalisis({ analysis }) {
         </ul>
       </div>
 
-      {/* CTA Section */}
+      {/* CTA Section - DOWNLOAD PDF */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-2xl p-8 text-center">
-        <h3 className="text-2xl font-bold mb-3">Ingin Analisis Lebih Mendalam?</h3>
+        <h3 className="text-2xl font-bold mb-3">Simpan Hasil Analisis</h3>
         <p className="mb-6 opacity-90">
-          Hubungi konsultan kami untuk interpretasi hasil yang lebih detail dan personalized insights.
+          Unduh hasil analisis lengkap Anda dalam format PDF untuk referensi di masa mendatang.
         </p>
-        <button className="bg-white text-indigo-600 px-8 py-3 font-semibold rounded-lg hover:bg-gray-100 transition shadow-md">
-          Hubungi Kami
+        <button
+          onClick={handleDownloadPDF}
+          className="bg-white text-indigo-600 px-8 py-3 font-semibold rounded-lg hover:bg-gray-100 transition shadow-md flex items-center justify-center gap-2 mx-auto"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+          Download PDF
         </button>
       </div>
     </div>

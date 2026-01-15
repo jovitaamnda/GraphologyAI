@@ -61,7 +61,7 @@ export default function ProfilePage() {
           // Check if full URL or relative
           const imageUrl = profileData.profilePicture.startsWith('http')
             ? profileData.profilePicture
-            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${profileData.profilePicture}`;
+            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${profileData.profilePicture}`;
           setProfileImage(imageUrl);
         }
 
@@ -142,7 +142,7 @@ export default function ProfilePage() {
       if (freshProfile.profilePicture) {
         const imageUrl = freshProfile.profilePicture.startsWith('http')
           ? freshProfile.profilePicture
-          : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${freshProfile.profilePicture}`;
+          : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${freshProfile.profilePicture}`;
         setProfileImage(imageUrl);
       }
 

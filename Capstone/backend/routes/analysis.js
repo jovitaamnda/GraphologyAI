@@ -11,6 +11,7 @@ router.get("/admin/stats", protect, admin, analysisController.getStatistics);
 router.post("/upload", protect, analysisController.uploadImage);
 router.post("/canvas", protect, analysisController.analyzeCanvas);
 router.get("/:analysisId", protect, analysisController.getAnalysis);
+router.get("/:analysisId/pdf", protect, analysisController.generatePDF); // New PDF Route
 router.get("/history/:userId", protect, analysisController.getUserHistory);
 router.delete("/:analysisId", protect, analysisController.deleteAnalysis);
 

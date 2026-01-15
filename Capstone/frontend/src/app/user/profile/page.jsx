@@ -57,7 +57,7 @@ export default function ProfilePage() {
         if (data.profilePicture) {
           const url = data.profilePicture.startsWith('http')
             ? data.profilePicture
-            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${data.profilePicture}`;
+            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${data.profilePicture}`;
           setAvatarPreview(url);
         }
       } catch (error) {
