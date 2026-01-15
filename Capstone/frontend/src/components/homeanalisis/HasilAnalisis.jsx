@@ -28,7 +28,8 @@ export default function HasilAnalisis({ analysis }) {
     // Mengambil enneagramType dari backend
     enneagram: rawData.enneagramType || "Tipe Tidak Terdeteksi",
     personality: rawData.personalityType || "Unknown Type",
-    traits: traitsList,
+    aiConfidence: rawData.aiConfidence, // Pass AI score
+    traits: traitsList.filter(t => t.label.toLowerCase() !== 'confidence'), // Optional: Hide 'confidence' trait if user wants it purely as AI score
     description: rawData.description || "No description available.",
     image: rawData.imageUrl || rawData.canvasData,
     recommendations: [
@@ -83,6 +84,13 @@ export default function HasilAnalisis({ analysis }) {
         </div>
 
         <p className="text-xl opacity-90">{displayData.personality}</p>
+
+        {/* AI Confidence Badge */}
+        {displayData.aiConfidence && (
+          <div className="mt-3 text-sm bg-white/20 inline-block px-3 py-1 rounded-full border border-white/30">
+            Akurasi AI: {displayData.aiConfidence > 1 ? displayData.aiConfidence : (displayData.aiConfidence * 100).toFixed(0)}%
+          </div>
+        )}
       </div>
 
       {/* Traits Visualization */}

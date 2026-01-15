@@ -10,7 +10,18 @@ exports.uploadImage = async (req, res) => {
   try {
     // Get userId from authenticated user (from auth middleware)
     const userId = req.user._id;
-    const imageData = req.file ? req.file.path : req.body.imageData;
+    console.log("[Upload Debug] req.file:", req.file);
+    // console.log("[Upload Debug] req.body.imageData type:", typeof req.body.imageData); 
+
+    // Prioritize Base64 from body if available
+    let imageData;
+    if (req.body.imageData && typeof req.body.imageData === 'string' && req.body.imageData.startsWith('data:image')) {
+      imageData = req.body.imageData;
+      console.log("[Upload Debug] Using Base64 from req.body");
+    } else {
+      imageData = req.file ? req.file.path : req.body.imageData;
+      console.log("[Upload Debug] Using file path or raw body");
+    }
 
     if (!imageData) {
       return res.status(400).json({ message: "Image data required" });
@@ -70,6 +81,12 @@ exports.generatePDF = async (req, res) => {
     // Enneagram Type
     doc.fontSize(16).fillColor("purple").text(`Tipe Kepribadian: ${analysis.enneagramType || 'Tidak Terdeteksi'}`, { align: "center" });
     doc.fontSize(14).fillColor("black").text(`(${analysis.personalityType || 'Unknown'})`, { align: "center" });
+
+    // AI Confidence
+    if (analysis.aiConfidence) {
+      const confPercent = analysis.aiConfidence > 1 ? analysis.aiConfidence : (analysis.aiConfidence * 100).toFixed(0);
+      doc.fontSize(10).fillColor("grey").text(`Akurasi AI: ${confPercent}%`, { align: "center" });
+    }
     doc.moveDown();
 
     // Description

@@ -14,11 +14,14 @@ const analysisSchema = new mongoose.Schema(
     },
     imageUrl: String,
     canvasData: String,
-    
+
     // --- TAMBAHKAN FIELD INI ---
-    enneagramType: { 
-      type: String, 
-      // Contoh isi: "Tipe 1", "Tipe 6", dll.
+    enneagramType: {
+      type: String,
+    },
+    aiConfidence: {
+      type: Number, // Score 0-100 or 0-1
+      default: 0
     },
     // ---------------------------
 
