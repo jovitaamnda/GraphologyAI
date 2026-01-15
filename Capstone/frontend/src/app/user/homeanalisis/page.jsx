@@ -6,6 +6,7 @@ import UploadFoto from "@/components/homeanalisis/UploadFoto";
 import HandwritingCanvas from "@/components/homeanalisis/HandwritingCanvas";
 import HasilAnalisis from "@/components/homeanalisis/HasilAnalisis";
 import LoginRequiredModal from "@/components/modals/LoginRequiredModal";
+import LoadingModal from "@/components/modals/LoadingModal";
 import { Upload, Sparkles, Check } from "lucide-react";
 import { Lightbulb, Sun, Ruler, Smartphone, Camera, Pencil } from "lucide-react";
 import { analysisApi } from "@/api";
@@ -251,6 +252,9 @@ export default function HomeAnalisis() {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
       />
+
+      {/* Analysis Loading Modal */}
+      <LoadingModal isOpen={isLoading} />
     </div>
   );
 }
