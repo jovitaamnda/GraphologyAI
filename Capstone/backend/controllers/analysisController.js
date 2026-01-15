@@ -5,11 +5,12 @@ const AnalysisService = require("../services/analysisService");
 // @access  Private
 exports.uploadImage = async (req, res) => {
   try {
-    const { userId } = req.body;
+    // Get userId from authenticated user (from auth middleware)
+    const userId = req.user._id;
     const imageData = req.file ? req.file.path : req.body.imageData;
 
-    if (!imageData || !userId) {
-      return res.status(400).json({ message: "Image data and userId required" });
+    if (!imageData) {
+      return res.status(400).json({ message: "Image data required" });
     }
 
     const analysis = await AnalysisService.analyzeHandwriting(
@@ -23,6 +24,7 @@ exports.uploadImage = async (req, res) => {
       analysis,
     });
   } catch (error) {
+    console.error("[Upload Error]", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -32,10 +34,12 @@ exports.uploadImage = async (req, res) => {
 // @access  Private
 exports.analyzeCanvas = async (req, res) => {
   try {
-    const { userId, canvasData } = req.body;
+    // Get userId from authenticated user
+    const userId = req.user._id;
+    const { canvasData } = req.body;
 
-    if (!canvasData || !userId) {
-      return res.status(400).json({ message: "Canvas data and userId required" });
+    if (!canvasData) {
+      return res.status(400).json({ message: "Canvas data required" });
     }
 
     const analysis = await AnalysisService.analyzeHandwriting(
@@ -49,6 +53,7 @@ exports.analyzeCanvas = async (req, res) => {
       analysis,
     });
   } catch (error) {
+    console.error("[Canvas Error]", error);
     res.status(500).json({ message: error.message });
   }
 };

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Navbar from "@/components/sections/Navbar";
 import HeroSection from "@/components/sections/HeroSection";
+import AboutSection from "@/components/sections/AboutSection";
 import Footer from "@/components/sections/Footer";
 
 export default function Home() {
@@ -21,10 +22,11 @@ export default function Home() {
           <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
-      <Navbar />
+      {/* Navbar handled by Layout */}
       {/* Homepage hanya Hero Section dengan buttons */}
       <HeroSection id="home" />
+      <AboutSection />
       <Footer />
-    </main>
+    </main >
   );
 }

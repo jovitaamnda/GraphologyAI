@@ -74,12 +74,7 @@ export default function HeroSection({ id }) {
           <div className="flex flex-wrap gap-4 justify-center md:justify-start">
             <MulaiAnalisisButton />
 
-            <button
-              onClick={() => router.push("/handwriting-analysis")}
-              className="relative z-50 border-2 border-white/50 text-white font-semibold text-lg px-8 py-3 rounded-xl hover:bg-white/10 hover:border-white/70 backdrop-blur-md transition-all duration-300"
-            >
-              Pelajari Lebih Lanjut
-            </button>
+
           </div>
         </div>
 

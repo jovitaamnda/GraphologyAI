@@ -3,216 +3,226 @@
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged, signOut, updateProfile, updateEmail, updatePassword } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { auth, db, storage } from "../../firebase/firebaseConfig";
+import { useAuth } from "@/context/AuthContext";
+import { authApi } from "@/api";
+import { Camera } from "lucide-react";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [loadingAuth, setLoadingAuth] = useState(true);
-  const [user, setUser] = useState(null);
+  const { user, loading, logout, updateUser } = useAuth();
 
-  // form state
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
+  // Form State
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    age: "",
+    gender: "",
+    currentPassword: "",
+    newPassword: ""
+  });
+
+  const [initialLoading, setInitialLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [file, setFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
 
-  // upload state
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-
-  // hidden input ref
   const fileInputRef = useRef(null);
 
+  // Protected Route Check
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      setLoadingAuth(false);
-      if (u) {
-        setUser(u);
-        setName(u.displayName || "");
-        setEmail(u.email || "");
-        try {
-          const snap = await getDoc(doc(db, "users", u.uid));
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data.phone) setPhone(data.phone);
-          }
-        } catch (err) {
-          console.error("fetch user doc error:", err);
-        }
-      } else {
-        setUser(null);
-      }
-    });
-    return () => unsub();
-  }, []);
+    if (loading) return;
+    if (!user) {
+      router.push("/auth/login");
+    }
+  }, [user, loading, router]);
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push("/");
+  // Fetch Data on Load
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchProfile = async () => {
+      try {
+        const data = await authApi.getProfile();
+        setFormData({
+          name: data.name || "",
+          email: data.email || "",
+          phone: data.phoneNumber || "",
+          age: data.profile?.age || "",
+          gender: data.profile?.gender || "",
+          currentPassword: "",
+          newPassword: ""
+        });
+
+        if (data.profilePicture) {
+          const url = data.profilePicture.startsWith('http')
+            ? data.profilePicture
+            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${data.profilePicture}`;
+          setAvatarPreview(url);
+        }
+      } catch (error) {
+        console.error("Failed to load profile:", error);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [user]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      const reader = new FileReader();
+      reader.onloadend = () => setAvatarPreview(reader.result);
+      reader.readAsDataURL(selectedFile);
+    }
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!user) return alert("User not logged in");
-
     setSaving(true);
+
     try {
-      if (name !== user.displayName) {
-        await updateProfile(auth.currentUser, { displayName: name });
+      const dataToSubmit = new FormData();
+      dataToSubmit.append('name', formData.name);
+      dataToSubmit.append('email', formData.email);
+      dataToSubmit.append('phoneNumber', formData.phone);
+      dataToSubmit.append('age', formData.age);
+      dataToSubmit.append('gender', formData.gender);
+      if (file) {
+        dataToSubmit.append('profilePicture', file);
       }
 
-      if (email !== user.email) {
-        try {
-          await updateEmail(auth.currentUser, email);
-        } catch (err) {
-          alert("Gagal mengubah email, login ulang dulu.");
+      // Update Profile
+      const updatedUser = await authApi.updateProfile(dataToSubmit);
+
+      // Change Password if requested
+      if (formData.newPassword) {
+        if (!formData.currentPassword) {
+          alert("Please provide current password to set a new one.");
+          return;
         }
+        await authApi.changePassword(formData.currentPassword, formData.newPassword);
       }
 
-      if (password) {
-        try {
-          await updatePassword(auth.currentUser, password);
-        } catch (err) {
-          alert("Gagal mengubah password, login ulang dulu.");
-        }
-      }
+      if (updateUser) updateUser(updatedUser);
 
-      await setDoc(doc(db, "users", user.uid), { phone }, { merge: true });
+      alert("Profil berhasil diperbarui!");
+      // Clear password fields
+      setFormData(prev => ({ ...prev, currentPassword: "", newPassword: "" }));
 
-      alert("Profile berhasil disimpan.");
-      setUser({ ...user, displayName: name, email });
-      setPassword("");
-    } catch (err) {
-      console.error(err);
-      alert("Terjadi kesalahan saat menyimpan.");
+    } catch (error) {
+      console.error("Update failed:", error);
+      alert(error.response?.data?.message || "Gagal menyimpan profil.");
     } finally {
       setSaving(false);
     }
   };
 
-  // fungsi upload foto otomatis setelah pilih
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-    setUploading(true);
-    setUploadProgress(0);
-
-    const filename = `profile_${Date.now()}.${file.name.split(".").pop()}`;
-    const storageRef = ref(storage, `users/${user.uid}/${filename}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        setUploadProgress(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100));
-      },
-      (error) => {
-        console.error("Upload error:", error);
-        alert("Upload gagal. Coba lagi.");
-        setUploading(false);
-      },
-      async () => {
-        try {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          await updateProfile(auth.currentUser, { photoURL: downloadURL });
-          await setDoc(doc(db, "users", user.uid), { photoURL: downloadURL }, { merge: true });
-          setUser({ ...user, photoURL: downloadURL });
-          alert("Foto profil berhasil diperbarui!");
-        } catch (err) {
-          console.error("Saving photoURL error:", err);
-          alert("Gagal menyimpan photoURL.");
-        } finally {
-          setUploading(false);
-          setUploadProgress(0);
-        }
-      }
-    );
+  const handleLogout = () => {
+    logout();
+    router.push("/auth/login");
   };
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  if (loadingAuth) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-
-  if (!user)
+  if (loading || initialLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <p className="mb-4">Kamu belum login.</p>
-        <button onClick={() => router.push("/login")} className="bg-blue-700 text-white px-4 py-2 rounded">
-          Login
-        </button>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
+  }
 
-  const avatarSrc = user.photoURL || "/profile.jpeg";
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-6xl mx-auto py-12 px-6">
         <div className="flex flex-col md:flex-row items-stretch gap-8">
           {/* Left purple panel */}
-          <div className="md:w-1/3 bg-purple-500 rounded-lg p-10 flex flex-col items-center justify-center text-center">
-            {/* Avatar (klik untuk upload) */}
-            <div onClick={handleAvatarClick} className="relative w-40 h-40 rounded-full bg-purple-700 flex items-center justify-center mb-6 overflow-hidden shadow-lg cursor-pointer group" title="Klik untuk ganti foto profil">
-              <Image src={avatarSrc} alt="avatar" width={160} height={160} className="w-full h-full object-cover rounded-full" />
-              {uploading && (
-                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white text-sm rounded-full">
-                  <div>Uploading...</div>
-                  <div>{uploadProgress}%</div>
-                </div>
-              )}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-sm transition">Klik untuk ubah foto</div>
+          <div className="md:w-1/3 bg-purple-500 rounded-lg p-10 flex flex-col items-center justify-center text-center text-white">
+            {/* Avatar */}
+            <div
+              className="relative w-40 h-40 rounded-full bg-purple-700 mb-6 overflow-hidden shadow-lg cursor-pointer group border-4 border-white/20"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Image
+                src={avatarPreview || "/profile.jpeg"}
+                alt="avatar"
+                fill
+                className="object-cover"
+                onError={(e) => { e.target.src = "/profile.jpeg" }}
+              />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                <Camera className="w-8 h-8 text-white" />
+              </div>
             </div>
 
-            <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
 
-            <h2 className="text-2xl md:text-3xl font-semibold text-white">{name || "User"}</h2>
+            <h2 className="text-2xl font-bold mb-1">{formData.name}</h2>
+            <p className="text-purple-200">{user.email}</p>
           </div>
 
           {/* Right white card */}
-          <div className="md:w-2/3 bg-white rounded-2xl shadow-md p-8">
-            <h1 className="text-3xl font-serif mb-1">Profile Settings</h1>
-            <p className="text-sm text-gray-500 mb-6">Manage your personal information</p>
+          <div className="md:w-2/3 bg-white rounded-2xl shadow-md p-8 border border-gray-100">
+            <h1 className="text-3xl font-serif mb-1 text-gray-800">Profile Settings</h1>
+            <p className="text-sm text-gray-500 mb-8">Manage your personal information</p>
 
-            <form onSubmit={handleSave} className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">Full Name</label>
-                <input value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-300" placeholder="Full name" />
+            <form onSubmit={handleSave} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
+                  <input name="name" value={formData.name} onChange={handleInputChange} className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input name="email" value={formData.email} onChange={handleInputChange} className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">Email Address</label>
-                <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-300" placeholder="Email" />
-                <p className="text-xs text-gray-400 mt-1">Mengubah email mungkin memerlukan login ulang (untuk keamanan).</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">No. Telepon</label>
+                  <input name="phone" value={formData.phone} onChange={handleInputChange} className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Umur</label>
+                  <input type="number" name="age" value={formData.age} onChange={handleInputChange} className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                  <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white">
+                    <option value="">Pilih...</option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">Phone Number</label>
-                <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-300" placeholder="Phone number" />
+              <div className="pt-6 border-t border-gray-100">
+                <h3 className="text-lg font-medium text-gray-800 mb-4">Ganti Password</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <input type="password" name="currentPassword" value={formData.currentPassword} onChange={handleInputChange} placeholder="Password Saat Ini" className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                  </div>
+                  <div>
+                    <input type="password" name="newPassword" value={formData.newPassword} onChange={handleInputChange} placeholder="Password Baru" className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">Change Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-300"
-                  placeholder="New password (leave blank if not changing)"
-                />
-              </div>
-
-              <div className="mt-6">
-                <button type="submit" disabled={saving} className="bg-purple-500 text-white px-6 py-3 rounded-lg shadow hover:opacity-95 disabled:opacity-60">
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-                <button type="button" onClick={handleLogout} className="ml-4 text-red-500 px-4 py-2 rounded border border-red-100">
+              <div className="mt-8 flex items-center justify-between pt-4">
+                <button type="button" onClick={handleLogout} className="text-red-500 hover:text-red-700 font-medium px-4">
                   Logout
+                </button>
+                <button type="submit" disabled={saving} className="bg-purple-600 text-white px-8 py-3 rounded-lg shadow-lg hover:bg-purple-700 transition disabled:opacity-70 disabled:cursor-not-allowed font-medium">
+                  {saving ? "Menyimpan..." : "Simpan Perubahan"}
                 </button>
               </div>
             </form>

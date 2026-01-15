@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { authApi } from "@/api";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -45,58 +46,52 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-      
       // Call backend API untuk login
-      const response = await fetch(`${apiUrl}/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      });
+      const loginResponse = await authApi.login(email, password);
 
-      const data = await response.json();
+      console.log("LOGIN RAW RESPONSE:", loginResponse); // DEBUG
 
-      if (!response.ok) {
-        setError(data.message || "Login gagal. Silakan coba lagi.");
-        setLoading(false);
-        return;
-      }
+      if (loginResponse.token) {
+        // 1. Simpan Token dulu agar request berikutnya ter-autentikasi
+        localStorage.setItem("authToken", loginResponse.token);
 
-      // Login berhasil - update context dengan role
-      login({
-        id: data.user?._id || data.user?.id,
-        email: data.user?.email,
-        name: data.user?.name,
-        role: data.user?.role || "user",  // Default role ke 'user' jika tidak ada
-        photo: data.user?.photo,
-        token: data.token,
-      });
+        // 2. Fetch User Profile lengkap agar yakin dapat ID
+        try {
+          const userProfile = await authApi.getProfile();
+          console.log("FULL USER PROFILE FETCHED:", userProfile); // DEBUG
 
-      // Store token dan user data di localStorage
-      if (data.token) {
-        localStorage.setItem("authToken", data.token);
-        localStorage.setItem("userData", JSON.stringify({
-          id: data.user?._id || data.user?.id,
-          email: data.user?.email,
-          name: data.user?.name,
-          role: data.user?.role || "user",
-          photo: data.user?.photo,
-        }));
-      }
+          const userDataToSave = {
+            id: userProfile._id || userProfile.id,
+            email: userProfile.email,
+            name: userProfile.name,
+            role: userProfile.role || "user",
+            photo: userProfile.photo,
+          };
 
-      setLoading(false);
+          // 3. Simpan ke State & LocalStorage
+          login({ ...userDataToSave, token: loginResponse.token });
+          localStorage.setItem("userData", JSON.stringify(userDataToSave));
 
-      // ✅ Redirect berbeda berdasarkan role
-      if (data.user?.role === 'admin') {
-        router.push("/admin");  // Admin ke dashboard admin
+          // 4. Redirect
+          console.log("Redirecting based on role:", userProfile.role);
+          if (userProfile.role === 'admin') {
+            // Set cookie for middleware
+            document.cookie = "admin_access=true; path=/";
+            console.log("Going to /admin");
+            router.push("/admin");
+          } else {
+            console.log("Going to /");
+            router.push("/");
+          }
+        } catch (profileError) {
+          console.error("Failed to fetch profile:", profileError);
+          throw new Error("Gagal mengambil data profil user.");
+        }
       } else {
-        router.push("/homeanalisis");  // User ke analysis page
+        throw new Error("Login berhasil tetapi tidak menerima token.");
       }
     } catch (err) {
-      console.error("Login error:", err);
+      console.warn("Login attempt failed:", err); // Warn is better than Error to avoid "Issue" overlay
       setError(`Terjadi kesalahan: ${err.message || 'Silakan coba lagi.'}`);
       setLoading(false);
     }

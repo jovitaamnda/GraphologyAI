@@ -45,14 +45,22 @@ export default function ImageUpload({
     try {
       setLoading(true);
 
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Please login first");
+      }
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/analysis/upload`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // Add token
+          },
           body: JSON.stringify({
-            userId,
-            imageData: preview,
+            imageData: preview, // userId removed, backend gets it from token
           }),
         }
       );
@@ -115,11 +123,10 @@ export default function ImageUpload({
 
         <button
           onClick={() => fileInputRef.current?.click()}
-          className={`w-full px-4 py-3 font-semibold rounded-2xl transition ${
-            preview
+          className={`w-full px-4 py-3 font-semibold rounded-2xl transition ${preview
               ? "bg-gray-100 text-gray-500 cursor-default"
               : "bg-purple-100 hover:bg-purple-200 text-purple-600"
-          }`}
+            }`}
         >
           {preview ? "Image Selected" : "Select Image"}
         </button>
@@ -127,11 +134,10 @@ export default function ImageUpload({
         <button
           onClick={handleAnalyze}
           disabled={!preview}
-          className={`w-full px-4 py-3 font-semibold rounded-2xl transition ${
-            preview
+          className={`w-full px-4 py-3 font-semibold rounded-2xl transition ${preview
               ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
+            }`}
         >
           Analyze Image
         </button>

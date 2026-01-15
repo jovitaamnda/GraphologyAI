@@ -32,9 +32,18 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
+
+        console.log('🔹 LOGIN ATTEMPT 🔹');
+        console.log('Email:', email);
+        console.log('Password Length:', password ? password.length : 'N/A');
+        // Do NOT log the actual password in production, but for local debugging it helps to verify if it matches 'admin123456'
+        // console.log('Password:', password); 
+
         const result = await authService.login(email, password);
+        console.log('✅ Login Success for:', email);
         res.json(result);
     } catch (error) {
+        console.error('❌ Login Failed:', error.message);
         res.status(400).json({ message: error.message });
     }
 };
@@ -51,7 +60,24 @@ const getMe = async (req, res) => {
 // @access  Private
 const updateUserProfile = async (req, res) => {
     try {
-        const result = await authService.updateProfile(req.user._id, req.body);
+        const updateData = { ...req.body };
+
+        // Handle profile fields (because FormData sends them as flat keys)
+        if (req.body.age || req.body.gender || req.body.education || req.body.dominant_hand) {
+            updateData.profile = {
+                ...(req.body.age && { age: req.body.age }),
+                ...(req.body.gender && { gender: req.body.gender }),
+                ...(req.body.education && { education: req.body.education }),
+                ...(req.body.dominant_hand && { dominant_hand: req.body.dominant_hand }),
+            };
+        }
+
+        // If file uploaded, add to updateData
+        if (req.file) {
+            updateData.profilePicture = `/uploads/profiles/${req.file.filename}`;
+        }
+
+        const result = await authService.updateProfile(req.user._id, updateData);
         res.json(result);
     } catch (error) {
         res.status(404).json({ message: error.message });
@@ -64,7 +90,7 @@ const updateUserProfile = async (req, res) => {
 const changePassword = async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
-        
+
         if (!currentPassword || !newPassword) {
             return res.status(400).json({ message: 'Please provide current and new password' });
         }

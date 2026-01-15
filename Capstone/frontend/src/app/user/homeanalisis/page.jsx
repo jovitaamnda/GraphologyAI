@@ -1,15 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import UploadFoto from "@/components/homeanalisis/UploadFoto";
 import HandwritingCanvas from "@/components/homeanalisis/HandwritingCanvas";
 import HasilAnalisis from "@/components/homeanalisis/HasilAnalisis";
+import LoginRequiredModal from "@/components/modals/LoginRequiredModal";
 import { Upload, Sparkles, Check } from "lucide-react";
-import { Lightbulb, Sun, Ruler, Smartphone, Camera } from "lucide-react";
+import { Lightbulb, Sun, Ruler, Smartphone, Camera, Pencil } from "lucide-react";
+import { analysisApi } from "@/api";
 
 export default function HomeAnalisis() {
+  const router = useRouter();
   const [step, setStep] = useState("upload");
-  const [uploadedImage, setUploadedImage] = useState(null);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const steps = [
     { id: "upload", name: "Upload Tulisan", icon: Upload },
@@ -18,9 +25,25 @@ export default function HomeAnalisis() {
 
   const currentStepIndex = steps.findIndex((s) => s.id === step);
 
-  const handleUploadComplete = (imageData) => {
-    setUploadedImage(imageData);
-    setStep("hasil");
+  const handleUploadComplete = async (imageData) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Call API - userId will be extracted from JWT token by backend
+      const data = await analysisApi.uploadImage(imageData);
+      setAnalysisResult(data.analysis);
+      setStep("hasil");
+    } catch (err) {
+      console.error("Analysis Error:", err);
+      setError(err.message);
+
+      // Check if it's an authentication error
+      if (err.message.includes("authorized") || err.message.includes("token")) {
+        setShowLoginModal(true);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -43,9 +66,8 @@ export default function HomeAnalisis() {
               <div key={s.id} className="flex items-center flex-1">
                 <div className="relative flex flex-col items-center">
                   <div
-                    className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 ${
-                      isCompleted ? "bg-green-500 text-white" : isActive ? "bg-indigo-600 text-white shadow-lg scale-110" : "bg-gray-300 text-gray-600"
-                    }`}
+                    className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 ${isCompleted ? "bg-green-500 text-white" : isActive ? "bg-indigo-600 text-white shadow-lg scale-110" : "bg-gray-300 text-gray-600"
+                      }`}
                   >
                     {isCompleted ? <Check className="w-8 h-8" /> : <Icon className="w-8 h-8" />}
                   </div>
@@ -167,7 +189,7 @@ export default function HomeAnalisis() {
 
                 <ul className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
                   <li className="flex items-start gap-5 bg-purple-50 p-6 rounded-2xl">
-                    <PencilIcon className="w-10 h-10 text-purple-600 flex-shrink-0" />
+                    <Pencil className="w-10 h-10 text-purple-600 flex-shrink-0" />
                     <div>
                       <strong className="text-lg">Tulis dengan ukuran & tekanan bervariasi</strong>
                       <p className="text-gray-600 mt-1">Seperti menulis biasa di kertas</p>
@@ -202,7 +224,7 @@ export default function HomeAnalisis() {
           {step === "hasil" && (
             <div className="animate-fadeIn">
               <h2 className="text-3xl font-bold text-center mb-10 text-indigo-700">Hasil Analisis Lengkap</h2>
-              <HasilAnalisis image={uploadedImage} />
+              <HasilAnalisis analysis={analysisResult} />
             </div>
           )}
         </div>
@@ -223,6 +245,12 @@ export default function HomeAnalisis() {
           animation: fadeIn 0.6s ease-out;
         }
       `}</style>
+
+      {/* Login Modal */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
     </div>
   );
 }

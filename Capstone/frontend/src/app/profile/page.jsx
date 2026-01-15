@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { User, Mail, Phone, Lock, LogOut, Camera, Save } from "lucide-react";
+import { authApi, analysisApi } from "@/api";
 import { useAuth } from "@/context/AuthContext";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, loading, logout } = useAuth();
-  
+  const { user, loading, logout, updateUser } = useAuth();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -21,6 +22,7 @@ export default function ProfilePage() {
     confirmPassword: "",
   });
   const [profileImage, setProfileImage] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null); // RAW FILE FOR UPLOAD
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -44,43 +46,38 @@ export default function ProfilePage() {
 
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("authToken");
-        
+        setLoadingData(true);
         // Fetch user profile
-        const profileRes = await fetch("/api/auth/me", {
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
+        const profileData = await authApi.getProfile();
+
+        setFormData({
+          name: profileData.name || "",
+          email: profileData.email || "",
+          phoneNumber: profileData.phoneNumber || "",
         });
-        const profileData = await profileRes.json();
-        
-        if (profileRes.ok) {
-          setFormData({
-            name: profileData.name || "",
-            email: profileData.email || "",
-            phoneNumber: profileData.phoneNumber || "",
-          });
+
+        // Set initial profile image if exists
+        if (profileData.profilePicture) {
+          // Check if full URL or relative
+          const imageUrl = profileData.profilePicture.startsWith('http')
+            ? profileData.profilePicture
+            : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${profileData.profilePicture}`;
+          setProfileImage(imageUrl);
         }
 
         // Fetch analysis history
         try {
-          const historyRes = await fetch(`/api/analysis/history/${user._id}`, {
-            headers: {
-              "Authorization": `Bearer ${token}`
-            }
-          });
-          if (historyRes.ok) {
-            const historyData = await historyRes.json();
-            setAnalysisHistory(historyData.analyses || []);
-          }
+          const historyData = await analysisApi.getHistory(user._id || user.id);
+          setAnalysisHistory(historyData.analyses || []);
         } catch (err) {
           console.error("Error fetching history:", err);
+          // Don't fail entire page if history fails
         }
 
         setLoadingData(false);
       } catch (error) {
         console.error("Error fetching profile:", error);
-        setErrorMessage("Failed to load profile");
+        setErrorMessage("Failed to load profile: " + error.message);
         setLoadingData(false);
       }
     };
@@ -107,9 +104,10 @@ export default function ProfilePage() {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setSelectedFile(file); // SAVE RAW FILE
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfileImage(reader.result);
+        setProfileImage(reader.result); // PREVIEW
       };
       reader.readAsDataURL(file);
     }
@@ -118,34 +116,46 @@ export default function ProfilePage() {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("authToken");
-      const response = await fetch("/api/auth/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
+      const dataToSubmit = new FormData();
+      dataToSubmit.append('name', formData.name);
+      dataToSubmit.append('email', formData.email);
+      dataToSubmit.append('phoneNumber', formData.phoneNumber);
 
-      if (response.ok) {
-        setSuccessMessage("Profile updated successfully!");
-        setIsEditing(false);
-        setTimeout(() => setSuccessMessage(""), 3000);
-      } else {
-        setErrorMessage("Failed to update profile");
-        setTimeout(() => setErrorMessage(""), 3000);
+      if (selectedFile) {
+        dataToSubmit.append('profilePicture', selectedFile);
       }
+
+      await authApi.updateProfile(dataToSubmit);
+
+      setSuccessMessage("Profile updated successfully!");
+      setIsEditing(false);
+      setTimeout(() => setSuccessMessage(""), 3000);
+
+      // Refresh to ensure everything is synced
+      const freshProfile = await authApi.getProfile();
+
+      // Update AuthContext so Navbar updates immediately
+      if (updateUser) {
+        updateUser({ ...user, ...freshProfile });
+      }
+
+      if (freshProfile.profilePicture) {
+        const imageUrl = freshProfile.profilePicture.startsWith('http')
+          ? freshProfile.profilePicture
+          : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${freshProfile.profilePicture}`;
+        setProfileImage(imageUrl);
+      }
+
     } catch (error) {
       console.error("Error updating profile:", error);
-      setErrorMessage("Error updating profile");
+      setErrorMessage(error.message || "Error updating profile");
       setTimeout(() => setErrorMessage(""), 3000);
     }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setErrorMessage("Passwords do not match!");
       setTimeout(() => setErrorMessage(""), 3000);
@@ -153,31 +163,15 @@ export default function ProfilePage() {
     }
 
     try {
-      const token = localStorage.getItem("authToken");
-      const response = await fetch("/api/auth/change-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          currentPassword: passwordData.currentPassword,
-          newPassword: passwordData.newPassword
-        })
-      });
+      await authApi.changePassword(passwordData.currentPassword, passwordData.newPassword);
 
-      if (response.ok) {
-        setSuccessMessage("Password changed successfully!");
-        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-        setIsChangingPassword(false);
-        setTimeout(() => setSuccessMessage(""), 3000);
-      } else {
-        setErrorMessage("Failed to change password");
-        setTimeout(() => setErrorMessage(""), 3000);
-      }
+      setSuccessMessage("Password changed successfully!");
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setIsChangingPassword(false);
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
-      console.error("Error changing password:", error);
-      setErrorMessage("Error changing password");
+      // Validasi error (misal password salah) cukup tampilkan notifikasi, jangan console.error agar tidak dianggap system crash
+      setErrorMessage(error.message || "Error changing password");
       setTimeout(() => setErrorMessage(""), 3000);
     }
   };
@@ -201,8 +195,8 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 pt-28 pb-12 px-4" suppressHydrationWarning>
+      <div className="max-w-4xl mx-auto" suppressHydrationWarning>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -458,11 +452,10 @@ export default function ProfilePage() {
                             <p className="font-semibold text-gray-900 capitalize">{analysis.analysisType}</p>
                             <p className="text-sm text-gray-600">Type: {analysis.personalityType}</p>
                           </div>
-                          <span className={`text-xs px-3 py-1 rounded-full font-semibold ${
-                            analysis.status === "completed" ? "bg-green-100 text-green-800" :
+                          <span className={`text-xs px-3 py-1 rounded-full font-semibold ${analysis.status === "completed" ? "bg-green-100 text-green-800" :
                             analysis.status === "pending" ? "bg-yellow-100 text-yellow-800" :
-                            "bg-red-100 text-red-800"
-                          }`}>
+                              "bg-red-100 text-red-800"
+                            }`}>
                             {analysis.status}
                           </span>
                         </div>
