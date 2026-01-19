@@ -13,10 +13,13 @@ export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false); // tetap ada (UI)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // =========================
+  // VALIDASI FORM
+  // =========================
   const validateForm = () => {
     if (!email.trim()) {
       setError("Email tidak boleh kosong");
@@ -37,69 +40,59 @@ export default function LoginForm() {
     return true;
   };
 
+  // =========================
+  // SUBMIT LOGIN (COOKIE AUTH)
+  // =========================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     if (!validateForm()) return;
-
     setLoading(true);
 
     try {
-      // Call backend API untuk login
-      const loginResponse = await authApi.login(email, password);
+      /**
+       * 1️⃣ LOGIN
+       * Backend akan SET COOKIE httpOnly (token)
+       * Tidak ada token di response JSON
+       */
+      await authApi.login(email, password);
 
-      console.log("LOGIN RAW RESPONSE:", loginResponse); // DEBUG
+      /**
+       * 2️⃣ AMBIL USER DARI COOKIE
+       * Cookie otomatis dikirim oleh browser
+       */
+      const userProfile = await authApi.getProfile();
 
-      if (loginResponse.token) {
-        // 1. Simpan Token dulu agar request berikutnya ter-autentikasi
-        localStorage.setItem("authToken", loginResponse.token);
+      /**
+       * 3️⃣ SIMPAN USER KE AUTH CONTEXT
+       * (TANPA TOKEN)
+       */
+      login({
+        id: userProfile._id || userProfile.id,
+        email: userProfile.email,
+        name: userProfile.name,
+        role: userProfile.role || "user",
+        photo: userProfile.photo,
+      });
 
-        // 2. Fetch User Profile lengkap agar yakin dapat ID
-        try {
-          const userProfile = await authApi.getProfile();
-          console.log("FULL USER PROFILE FETCHED:", userProfile); // DEBUG
-
-          const userDataToSave = {
-            id: userProfile._id || userProfile.id,
-            email: userProfile.email,
-            name: userProfile.name,
-            role: userProfile.role || "user",
-            photo: userProfile.photo,
-          };
-
-          // 3. Simpan ke State & LocalStorage
-          login({ ...userDataToSave, token: loginResponse.token });
-          localStorage.setItem("userData", JSON.stringify(userDataToSave));
-
-          // 4. Redirect
-          console.log("Redirecting based on role:", userProfile.role);
-          if (userProfile.role === 'admin') {
-            // Set cookie for middleware
-            document.cookie = "admin_access=true; path=/";
-            console.log("Going to /admin");
-            router.push("/admin");
-          } else {
-            console.log("Going to /");
-            router.push("/");
-          }
-        } catch (profileError) {
-          console.error("Failed to fetch profile:", profileError);
-          throw new Error("Gagal mengambil data profil user.");
-        }
+      /**
+       * 4️⃣ REDIRECT BERDASARKAN ROLE
+       */
+      if (userProfile.role === "admin") {
+        router.push("/admin");
       } else {
-        throw new Error("Login berhasil tetapi tidak menerima token.");
+        router.push("/");
       }
     } catch (err) {
-      console.warn("Login attempt failed:", err); // Warn is better than Error to avoid "Issue" overlay
-      setError(`Terjadi kesalahan: ${err.message || 'Silakan coba lagi.'}`);
+      setError(err.message || "Gagal login, silakan coba lagi.");
       setLoading(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Error Message */}
+      {/* ERROR MESSAGE */}
       {error && (
         <div className="flex items-center gap-3 p-4 bg-red-100/20 border border-red-300 rounded-2xl text-red-400">
           <AlertCircle size={20} className="flex-shrink-0" />
@@ -107,7 +100,7 @@ export default function LoginForm() {
         </div>
       )}
 
-      {/* Email */}
+      {/* EMAIL */}
       <div className="relative">
         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-300" />
         <input
@@ -120,7 +113,7 @@ export default function LoginForm() {
         />
       </div>
 
-      {/* Password */}
+      {/* PASSWORD */}
       <div className="relative">
         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-300" />
         <input
@@ -136,7 +129,7 @@ export default function LoginForm() {
         </button>
       </div>
 
-      {/* Ingat Saya */}
+      {/* INGAT SAYA */}
       <div className="flex items-center justify-between text-sm">
         <label className="flex items-center gap-2 text-purple-200 cursor-pointer">
           <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="accent-purple-500 w-4 h-4 rounded" />
@@ -148,7 +141,7 @@ export default function LoginForm() {
         </a>
       </div>
 
-      {/* Submit Button */}
+      {/* SUBMIT BUTTON */}
       <button
         type="submit"
         disabled={loading}
