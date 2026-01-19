@@ -16,12 +16,7 @@ export default function AnalysisResult({ analysis }) {
 
   const handleDownloadTxt = () => {
     const element = document.createElement("a");
-    const file = new Blob(
-      [
-        `Graphology Analysis Result\n\nPersonality Type: ${personalityType}\n\n${description}\n\nTraits:\n${traitsList.map((t) => `${t.label}: ${t.value}%`).join("\n")}`,
-      ],
-      { type: "text/plain" }
-    );
+    const file = new Blob([`Graphology Analysis Result\n\nPersonality Type: ${personalityType}\n\n${description}\n\nTraits:\n${traitsList.map((t) => `${t.label}: ${t.value}%`).join("\n")}`], { type: "text/plain" });
     element.href = URL.createObjectURL(file);
     element.download = "analysis-result.txt";
     document.body.appendChild(element);
@@ -33,7 +28,7 @@ export default function AnalysisResult({ analysis }) {
     try {
       setIsExporting(true);
       const { jsPDF } = await import("jspdf");
-      
+
       const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -75,7 +70,7 @@ export default function AnalysisResult({ analysis }) {
       doc.setFontSize(11);
       traitsList.forEach((trait) => {
         const barWidth = (trait.value / 100) * 100; // 100mm width for bar
-        
+
         // Trait name and value
         doc.setTextColor(0, 0, 0);
         doc.text(`${trait.label}:`, 20, yPosition);
@@ -98,12 +93,7 @@ export default function AnalysisResult({ analysis }) {
       // Footer
       doc.setFontSize(9);
       doc.setTextColor(150, 150, 150);
-      doc.text(
-        `Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`,
-        pageWidth / 2,
-        pageHeight - 10,
-        { align: "center" }
-      );
+      doc.text(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, pageWidth / 2, pageHeight - 10, { align: "center" });
 
       doc.save("analysis-result.pdf");
       setIsExporting(false);
@@ -115,16 +105,10 @@ export default function AnalysisResult({ analysis }) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* Personality Type Card */}
       <div className="bg-white rounded-3xl shadow-2xl p-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          {personalityType}
-        </h2>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">{personalityType}</h2>
         <p className="text-gray-600 text-lg leading-relaxed">{description}</p>
       </div>
 
@@ -133,25 +117,13 @@ export default function AnalysisResult({ analysis }) {
         <h3 className="text-2xl font-bold text-gray-900 mb-6">Your Traits</h3>
         <div className="space-y-4">
           {traitsList.map((trait, index) => (
-            <motion.div
-              key={trait.label}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
+            <motion.div key={trait.label} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1 }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-gray-700">
-                  {trait.label}
-                </span>
+                <span className="font-semibold text-gray-700">{trait.label}</span>
                 <span className="text-purple-600 font-bold">{trait.value}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
-                <motion.div
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 h-3 rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${trait.value}%` }}
-                  transition={{ duration: 1, delay: index * 0.1 }}
-                />
+                <motion.div className="bg-gradient-to-r from-purple-600 to-pink-600 h-3 rounded-full" initial={{ width: 0 }} animate={{ width: `${trait.value}%` }} transition={{ duration: 1, delay: index * 0.1 }} />
               </div>
             </motion.div>
           ))}
@@ -181,11 +153,7 @@ export default function AnalysisResult({ analysis }) {
           TXT
         </motion.button>
 
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="flex items-center justify-center gap-2 px-6 py-4 bg-purple-100 hover:bg-purple-200 text-purple-600 font-semibold rounded-2xl transition"
-        >
+        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center justify-center gap-2 px-6 py-4 bg-purple-100 hover:bg-purple-200 text-purple-600 font-semibold rounded-2xl transition">
           <Share2 size={20} />
           Share
         </motion.button>
